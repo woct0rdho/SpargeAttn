@@ -25,8 +25,9 @@ from setuptools import setup, find_packages
 import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
 
+HAS_SM80 = False
+HAS_SM89 = False
 HAS_SM90 = False
-SAGE2PP_ENABLED = True
 
 def run_instantiations(src_dir: str):
     base_path = Path(src_dir)
@@ -151,41 +152,42 @@ if nvcc_cuda_version < Version("12.4"):
     if any(cc.startswith("9.0") for cc in compute_capabilities):
         raise RuntimeError(
             "CUDA 12.4 or higher is required for compute capability 9.0.")
-if nvcc_cuda_version < Version("12.8"):
-    warnings.warn("CUDA 12.8 or higher is required for Sage2++")
-    SAGE2PP_ENABLED = False
 
 # Add target compute capabilities to NVCC flags.
 for capability in compute_capabilities:
     num = capability.replace(".", "")
-    if num == '90':
+    if num in {'80', '86', '87'}:
+        HAS_SM80 = True
+        CXX_FLAGS += ["-DHAS_SM80"]
+    elif num == '89':
+        HAS_SM89 = True
+        CXX_FLAGS += ["-DHAS_SM89"]
+    elif num == '90':
         num = '90a'
         HAS_SM90 = True
         CXX_FLAGS += ["-DHAS_SM90"]
-    if num == '80' or num == '86' or num == '87':
-        SAGE2PP_ENABLED = False
-    
+
     NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=sm_{num}"]
     if capability.endswith("+PTX"):
         NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
 
-if SAGE2PP_ENABLED:
-    CXX_FLAGS += ["-DSAGE2PP_ENABLED"]
-
 ext_modules = []
 
-run_instantiations("csrc/qattn/instantiations_sm80")
-run_instantiations("csrc/qattn/instantiations_sm89")
-run_instantiations("csrc/qattn/instantiations_sm90")
+sources = ["csrc/qattn/pybind.cpp"]
 
-sources = [
-    "csrc/qattn/pybind.cpp",
-    "csrc/qattn/qk_int_sv_f16_cuda_sm80.cu",
-    "csrc/qattn/qk_int_sv_f8_cuda_sm89.cu",
-] + get_instantiations("csrc/qattn/instantiations_sm80") + get_instantiations("csrc/qattn/instantiations_sm89")
+if HAS_SM80:
+    sources += ["csrc/qattn/qk_int_sv_f16_cuda_sm80.cu"]
+    run_instantiations("csrc/qattn/instantiations_sm80")
+    sources += get_instantiations("csrc/qattn/instantiations_sm80")
+
+if HAS_SM89:
+    sources += ["csrc/qattn/qk_int_sv_f8_cuda_sm89.cu"]
+    run_instantiations("csrc/qattn/instantiations_sm89")
+    sources += get_instantiations("csrc/qattn/instantiations_sm89")
 
 if HAS_SM90:
-    sources += ["csrc/qattn/qk_int_sv_f8_cuda_sm90.cu", ]
+    sources += ["csrc/qattn/qk_int_sv_f8_cuda_sm90.cu"]
+    run_instantiations("csrc/qattn/instantiations_sm90")
     sources += get_instantiations("csrc/qattn/instantiations_sm90")
 
 qattn_extension = CUDAExtension(
