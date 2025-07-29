@@ -52,7 +52,11 @@ def get_instantiations(src_dir: str):
 SUPPORTED_ARCHS = {"8.0", "8.6", "8.7", "8.9", "9.0"}
 
 # Compiler flags.
-CXX_FLAGS = ["-g", "-O3", "-fopenmp", "-lgomp", "-std=c++17", "-DENABLE_BF16"]
+if os.name == "nt":
+    # TODO: Detect MSVC rather than OS
+    CXX_FLAGS = ["/O2", "/openmp", "/std:c++17", "-DENABLE_BF16"]
+else:
+    CXX_FLAGS = ["-g", "-O3", "-fopenmp", "-lgomp", "-std=c++17", "-DENABLE_BF16"]
 NVCC_FLAGS = [
     "-O3",
     "-std=c++17",
@@ -60,8 +64,10 @@ NVCC_FLAGS = [
     "-U__CUDA_NO_HALF_CONVERSIONS__",
     "--use_fast_math",
     "--threads=8",
-    "-Xptxas=-v",
+    # "-Xptxas=-v",
     "-diag-suppress=174", # suppress the specific warning
+    "-diag-suppress=177",
+    "-diag-suppress=221",
 ]
 
 ABI = 1 if torch._C._GLIBCXX_USE_CXX11_ABI else 0
@@ -185,11 +191,11 @@ if HAS_SM90:
 qattn_extension = CUDAExtension(
     name="spas_sage_attn._qattn",
     sources=sources,
+    libraries=["cuda"],
     extra_compile_args={
         "cxx": CXX_FLAGS,
         "nvcc": NVCC_FLAGS,
     },
-    extra_link_args=['-lcuda'],
 )
 ext_modules.append(qattn_extension)
 
@@ -204,23 +210,23 @@ fused_extension = CUDAExtension(
 ext_modules.append(fused_extension)
 
 setup(
-    name='spas_sage_attn', 
-    version='0.1.0',  
-    author='Jintao Zhang, Chendong Xiang, Haofeng Huang',  
-    author_email='jt-zhang6@gmail.com', 
-    packages=find_packages(),  
-    description='Accurate and efficient Sparse SageAttention.',  
-    long_description=open('README.md', encoding='utf-8').read(),  
-    long_description_content_type='text/markdown', 
-    url='https://github.com/thu-ml/SpargeAttn', 
-    license='BSD 3-Clause License', 
-    python_requires='>=3.9', 
-    classifiers=[  
-        'Development Status :: 3 - Alpha', 
-        'Intended Audience :: Developers',  
+    name='spas_sage_attn',
+    version='0.1.0',
+    author='Jintao Zhang, Chendong Xiang, Haofeng Huang',
+    author_email='jt-zhang6@gmail.com',
+    packages=find_packages(),
+    description='Accurate and efficient Sparse SageAttention.',
+    long_description=open('README.md', encoding='utf-8').read(),
+    long_description_content_type='text/markdown',
+    url='https://github.com/thu-ml/SpargeAttn',
+    license='BSD 3-Clause License',
+    python_requires='>=3.9',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 3', 
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
