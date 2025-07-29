@@ -25,6 +25,8 @@ from setuptools import setup, find_packages
 import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
 
+HAS_SM80 = False
+HAS_SM89 = False
 HAS_SM90 = False
 
 def run_instantiations(src_dir: str):
@@ -154,7 +156,13 @@ if nvcc_cuda_version < Version("12.4"):
 # Add target compute capabilities to NVCC flags.
 for capability in compute_capabilities:
     num = capability[0] + capability[2]
-    if num == '90':
+    if num in {'80', '86', '87'}:
+        HAS_SM80 = True
+        CXX_FLAGS += ["-DHAS_SM80"]
+    elif num == '89':
+        HAS_SM89 = True
+        CXX_FLAGS += ["-DHAS_SM89"]
+    elif num == '90':
         num = '90a'
         HAS_SM90 = True
         CXX_FLAGS += ["-DHAS_SM90"]
@@ -164,18 +172,22 @@ for capability in compute_capabilities:
 
 ext_modules = []
 
-run_instantiations("csrc/qattn/instantiations_sm80")
-run_instantiations("csrc/qattn/instantiations_sm89")
-run_instantiations("csrc/qattn/instantiations_sm90")
 
-sources = [
-    "csrc/qattn/pybind.cpp",
-    "csrc/qattn/qk_int_sv_f16_cuda_sm80.cu",
-    "csrc/qattn/qk_int_sv_f8_cuda_sm89.cu",
-] + get_instantiations("csrc/qattn/instantiations_sm80") + get_instantiations("csrc/qattn/instantiations_sm89")
+sources = ["csrc/qattn/pybind.cpp"]
+
+if HAS_SM80:
+    sources += ["csrc/qattn/qk_int_sv_f16_cuda_sm80.cu"]
+    run_instantiations("csrc/qattn/instantiations_sm80")
+    sources += get_instantiations("csrc/qattn/instantiations_sm80")
+
+if HAS_SM89:
+    sources += ["csrc/qattn/qk_int_sv_f8_cuda_sm89.cu"]
+    run_instantiations("csrc/qattn/instantiations_sm89")
+    sources += get_instantiations("csrc/qattn/instantiations_sm89")
 
 if HAS_SM90:
-    sources += ["csrc/qattn/qk_int_sv_f8_cuda_sm90.cu", ]
+    sources += ["csrc/qattn/qk_int_sv_f8_cuda_sm90.cu"]
+    run_instantiations("csrc/qattn/instantiations_sm90")
     sources += get_instantiations("csrc/qattn/instantiations_sm90")
 
 qattn_extension = CUDAExtension(
