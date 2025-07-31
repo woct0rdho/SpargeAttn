@@ -3,7 +3,6 @@ requires = [
     "einops",
     "numpy",
     "packaging",
-    "pybind11",
     "setuptools",
     "tqdm",
 
