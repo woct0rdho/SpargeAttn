@@ -20,8 +20,8 @@ import torch.nn.functional as F
 import os
 from tqdm import tqdm
 import numpy as np
-from spas_sage_attn.utils import precision_metric
-from spas_sage_attn import spas_sage_attn_meansim_cuda, spas_sage2_attn_meansim_cuda
+from .utils import precision_metric
+from .core import spas_sage2_attn_meansim_cuda
 import warnings
 from einops import rearrange
 
@@ -72,7 +72,7 @@ def partition_points_into_line(points, block_size, min_dim1=-1, max_dim1=1):
     return blocks
 
 # 
-from tools.gpu_process import GPUProcessPoolExecutor
+from .tools.gpu_process import GPUProcessPoolExecutor
 executor = GPUProcessPoolExecutor()
 
 class SparseAttentionMeansim(nn.Module):
@@ -134,13 +134,7 @@ class SparseAttentionMeansim(nn.Module):
         self.hyperparams_cache = {}
 
     def kernel_selection(self):
-        sm = torch.cuda.get_device_capability()
-        sm = 10*sm[0] + sm[1]
-        if sm >= 89:
-            return spas_sage2_attn_meansim_cuda
-        else:
-            warnings.warn(f'{sm=}, do not support sageattn2, using sageattn1 kernel')
-            return spas_sage_attn_meansim_cuda
+        return spas_sage2_attn_meansim_cuda
 
     @torch.no_grad()
     def tune_pvthreshd(self, qi, ki, vi, mask=None, is_causal=False, smooth_k=True, simthreshd1=None, cdfthreshd=None):
