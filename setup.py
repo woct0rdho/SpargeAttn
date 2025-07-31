@@ -25,10 +25,6 @@ from setuptools import setup, find_packages
 import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
 
-HAS_SM80 = False
-HAS_SM89 = False
-HAS_SM90 = False
-
 def run_instantiations(src_dir: str):
     base_path = Path(src_dir)
     py_files = [
@@ -49,22 +45,19 @@ def get_instantiations(src_dir: str):
         if path.is_file() and path.suffix == ".cu"
     ]
 
-# Supported NVIDIA GPU architectures.
-SUPPORTED_ARCHS = {"8.0", "8.6", "8.7", "8.9", "9.0", "12.0"}
-
 # Compiler flags.
 if os.name == "nt":
     # TODO: Detect MSVC rather than OS
     CXX_FLAGS = ["/O2", "/openmp", "/std:c++17", "-DENABLE_BF16"]
 else:
     CXX_FLAGS = ["-g", "-O3", "-fopenmp", "-lgomp", "-std=c++17", "-DENABLE_BF16"]
-NVCC_FLAGS = [
+NVCC_FLAGS_COMMON = [
     "-O3",
     "-std=c++17",
     "-U__CUDA_NO_HALF_OPERATORS__",
     "-U__CUDA_NO_HALF_CONVERSIONS__",
     "--use_fast_math",
-    "--threads=8",
+    f"--threads={os.cpu_count()}",
     # "-Xptxas=-v",
     "-diag-suppress=174", # suppress the specific warning
     "-Xcompiler", "-include,cassert", # fix error occurs when compiling for SM90+ with newer CUDA toolkits
@@ -74,7 +67,7 @@ NVCC_FLAGS = [
 
 ABI = 1 if torch._C._GLIBCXX_USE_CXX11_ABI else 0
 CXX_FLAGS += [f"-D_GLIBCXX_USE_CXX11_ABI={ABI}"]
-NVCC_FLAGS += [f"-D_GLIBCXX_USE_CXX11_ABI={ABI}"]
+NVCC_FLAGS_COMMON += [f"-D_GLIBCXX_USE_CXX11_ABI={ABI}"]
 
 if CUDA_HOME is None:
     raise RuntimeError(
@@ -92,45 +85,13 @@ def get_nvcc_cuda_version(cuda_dir: str) -> Version:
     nvcc_cuda_version = parse(output[release_idx].split(",")[0])
     return nvcc_cuda_version
 
-def get_torch_arch_list() -> Set[str]:
-    # TORCH_CUDA_ARCH_LIST can have one or more architectures,
-    # e.g. "8.0" or "7.5,8.0,8.6+PTX". Here, the "8.6+PTX" option asks the
-    # compiler to additionally include PTX code that can be runtime-compiled
-    # and executed on the 8.6 or newer architectures. While the PTX code will
-    # not give the best performance on the newer architectures, it provides
-    # forward compatibility.
-    env_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
-    if env_arch_list is None:
-        return set()
-
-    # List are separated by ; or space.
-    torch_arch_list = set(env_arch_list.replace(" ", ";").split(";"))
-    if not torch_arch_list:
-        return set()
-
-    # Filter out the invalid architectures and print a warning.
-    valid_archs = SUPPORTED_ARCHS.union({s + "+PTX" for s in SUPPORTED_ARCHS})
-    arch_list = torch_arch_list.intersection(valid_archs)
-    # If none of the specified architectures are valid, raise an error.
-    if not arch_list:
-        raise RuntimeError(
-            "None of the CUDA architectures in `TORCH_CUDA_ARCH_LIST` env "
-            f"variable ({env_arch_list}) is supported. "
-            f"Supported CUDA architectures are: {valid_archs}.")
-    invalid_arch_list = torch_arch_list - valid_archs
-    if invalid_arch_list:
-        warnings.warn(
-            f"Unsupported CUDA architectures ({invalid_arch_list}) are "
-            "excluded from the `TORCH_CUDA_ARCH_LIST` env variable "
-            f"({env_arch_list}). Supported CUDA architectures are: "
-            f"{valid_archs}.")
-    return arch_list
-
-# First, check the TORCH_CUDA_ARCH_LIST environment variable.
-compute_capabilities = get_torch_arch_list()
-if not compute_capabilities:
-    # If TORCH_CUDA_ARCH_LIST is not defined or empty, target all available
-    # GPUs on the current machine.
+compute_capabilities = set()
+if os.getenv("TORCH_CUDA_ARCH_LIST"):
+    # TORCH_CUDA_ARCH_LIST is separated by space or semicolon
+    for x in os.getenv("TORCH_CUDA_ARCH_LIST").replace(";", " ").split():
+        compute_capabilities.add(x)
+else:
+    # Iterate over all GPUs on the current machine.
     device_count = torch.cuda.device_count()
     for i in range(device_count):
         major, minor = torch.cuda.get_device_capability(i)
@@ -162,64 +123,86 @@ if nvcc_cuda_version < Version("12.8") and has_capability("12.0"):
         "CUDA 12.8 or higher is required for compute capability 12.0.")
 
 # Add target compute capabilities to NVCC flags.
-for capability in compute_capabilities:
-    # capability: "8.0+PTX" -> num: "80"
-    num = capability.split("+")[0].replace(".", "")
-    if num in {"90", "120"}:
-        # need to use sm90a instead of sm90 to use wgmma ptx instruction.
-        # need to use sm120a to use mxfp8/mxfp4/nvfp4 instructions.
-        num += "a"
+def get_nvcc_flags(allowed_capabilities):
+    NVCC_FLAGS = []
+    for capability in compute_capabilities:
+        if capability not in allowed_capabilities:
+            continue
 
-    if num in {'80', '86', '87'}:
-        HAS_SM80 = True
-        CXX_FLAGS += ["-DHAS_SM80"]
-    elif num in {'89', '120a'}:
-        HAS_SM89 = True
-        CXX_FLAGS += ["-DHAS_SM89"]
-    elif num == '90a':
-        HAS_SM90 = True
-        CXX_FLAGS += ["-DHAS_SM90"]
+        # capability: "8.0+PTX" -> num: "80"
+        num = capability.split("+")[0].replace(".", "")
+        if num in {"90", "120"}:
+            # need to use sm90a instead of sm90 to use wgmma ptx instruction.
+            # need to use sm120a to use mxfp8/mxfp4/nvfp4 instructions.
+            num += "a"
 
-    NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=sm_{num}"]
-    if capability.endswith("+PTX"):
-        NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
+        NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=sm_{num}"]
+        if capability.endswith("+PTX"):
+            NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
+
+    NVCC_FLAGS += NVCC_FLAGS_COMMON
+    return NVCC_FLAGS
 
 ext_modules = []
 
-sources = ["csrc/qattn/pybind.cpp"]
-
-if HAS_SM80:
-    sources += ["csrc/qattn/qk_int_sv_f16_cuda_sm80.cu"]
+if has_capability(("8.0", "8.6")):
+    sources = [
+        "csrc/qattn/pybind_sm80.cpp",
+        "csrc/qattn/qk_int_sv_f16_cuda_sm80.cu",
+    ]
     run_instantiations("csrc/qattn/instantiations_sm80")
     sources += get_instantiations("csrc/qattn/instantiations_sm80")
+    qattn_extension = CUDAExtension(
+        name="spas_sage_attn._qattn_sm80",
+        sources=sources,
+        extra_compile_args={
+            "cxx": CXX_FLAGS,
+            "nvcc": get_nvcc_flags(["8.0", "8.6"]),
+        },
+    )
+    ext_modules.append(qattn_extension)
 
-if HAS_SM89:
-    sources += ["csrc/qattn/qk_int_sv_f8_cuda_sm89.cu"]
+if has_capability(("8.9", "12.0")):
+    sources = [
+        "csrc/qattn/pybind_sm89.cpp",
+        "csrc/qattn/qk_int_sv_f8_cuda_sm89.cu",
+    ]
     run_instantiations("csrc/qattn/instantiations_sm89")
     sources += get_instantiations("csrc/qattn/instantiations_sm89")
+    qattn_extension = CUDAExtension(
+        name="spas_sage_attn._qattn_sm89",
+        sources=sources,
+        extra_compile_args={
+            "cxx": CXX_FLAGS,
+            "nvcc": get_nvcc_flags(["8.9", "12.0"]),
+        },
+    )
+    ext_modules.append(qattn_extension)
 
-if HAS_SM90:
-    sources += ["csrc/qattn/qk_int_sv_f8_cuda_sm90.cu"]
+if has_capability(("9.0",)):
+    sources = [
+        "csrc/qattn/pybind_sm90.cpp",
+        "csrc/qattn/qk_int_sv_f8_cuda_sm90.cu",
+    ]
     run_instantiations("csrc/qattn/instantiations_sm90")
     sources += get_instantiations("csrc/qattn/instantiations_sm90")
-
-qattn_extension = CUDAExtension(
-    name="spas_sage_attn._qattn",
-    sources=sources,
-    libraries=["cuda"],
-    extra_compile_args={
-        "cxx": CXX_FLAGS,
-        "nvcc": NVCC_FLAGS,
-    },
-)
-ext_modules.append(qattn_extension)
+    qattn_extension = CUDAExtension(
+        name="spas_sage_attn._qattn_sm90",
+        sources=sources,
+        libraries=["cuda"],
+        extra_compile_args={
+            "cxx": CXX_FLAGS,
+            "nvcc": get_nvcc_flags(["9.0"]),
+        },
+    )
+    ext_modules.append(qattn_extension)
 
 fused_extension = CUDAExtension(
     name="spas_sage_attn._fused",
     sources=["csrc/fused/pybind.cpp", "csrc/fused/fused.cu"],
     extra_compile_args={
         "cxx": CXX_FLAGS,
-        "nvcc": NVCC_FLAGS,
+        "nvcc": get_nvcc_flags(["8.0", "8.6", "8.9", "9.0", "12.0"]),
     },
 )
 ext_modules.append(fused_extension)
