@@ -25,10 +25,10 @@ void qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf(torch::Tensor query,
                     torch::Tensor valid_block_num,
                     torch::Tensor query_scale,
                     torch::Tensor key_scale,
-                    int tensor_layout,
-                    int is_causal,
-                    int qk_quant_gran,
-                    float sm_scale)
+                    int64_t tensor_layout,
+                    int64_t is_causal,
+                    int64_t qk_quant_gran,
+                    double sm_scale)
 {
   CHECK_CUDA(query);
   CHECK_CUDA(key);
@@ -194,11 +194,11 @@ torch::Tensor qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_thresh
                     torch::Tensor pv_threshold,
                     torch::Tensor query_scale,
                     torch::Tensor key_scale,
-                    int tensor_layout,
-                    int is_causal,
-                    int qk_quant_gran,
-                    float sm_scale,
-                    int return_pv_count)
+                    int64_t tensor_layout,
+                    int64_t is_causal,
+                    int64_t qk_quant_gran,
+                    double sm_scale,
+                    int64_t return_pv_count)
 {
   CHECK_CUDA(query);
   CHECK_CUDA(key);
