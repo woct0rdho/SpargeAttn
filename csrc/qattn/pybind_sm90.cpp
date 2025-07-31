@@ -15,23 +15,10 @@
  */
 
 #include <pybind11/pybind11.h>
-#include "attn_cuda.h"
+#include "attn_cuda_sm90.h"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 {
-#ifdef HAS_SM80
-  m.def("qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf", &qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf);
-  m.def("qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_threshold", &qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_threshold);
-#endif
-
-#ifdef HAS_SM89
-  m.def("qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale", &qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale);
-  m.def("qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold", &qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold);
-  m.def("qk_int8_sv_f8_accum_f16_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold", &qk_int8_sv_f8_accum_f16_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold);
-#endif
-
-#ifdef HAS_SM90
   m.def("qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_sm90", &qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_sm90);
   m.def("qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold_sm90", &qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold_sm90);
-#endif
 }
