@@ -51,6 +51,7 @@ if os.name == "nt":
     CXX_FLAGS = ["/O2", "/openmp", "/std:c++17", "/permissive-", "-DENABLE_BF16"]
 else:
     CXX_FLAGS = ["-g", "-O3", "-fopenmp", "-lgomp", "-std=c++17", "-DENABLE_BF16"]
+CXX_FLAGS += ["-DPy_LIMITED_API=0x03090000"]
 
 NVCC_FLAGS_COMMON = [
     "-O3",
@@ -63,6 +64,7 @@ NVCC_FLAGS_COMMON = [
     "-diag-suppress=174", # suppress the specific warning
     "-diag-suppress=177",
     "-diag-suppress=221",
+    "-DPy_LIMITED_API=0x03090000",
 ]
 if os.name == "nt":
     # https://github.com/pytorch/pytorch/issues/148317
@@ -166,6 +168,7 @@ if has_capability(("8.0", "8.6", "8.7")):
             # Build binary for sm80 if sm86/87 is detected. No need to build binary for sm86/87
             "nvcc": get_nvcc_flags(["8.0"]),
         },
+        py_limited_api=True,
     )
     ext_modules.append(qattn_extension)
 
@@ -183,6 +186,7 @@ if has_capability(("8.9", "10.0", "12.0", "12.1")):
             "cxx": CXX_FLAGS,
             "nvcc": get_nvcc_flags(["8.9", "12.0"]),
         },
+        py_limited_api=True,
     )
     ext_modules.append(qattn_extension)
 
@@ -201,6 +205,7 @@ if has_capability("9.0"):
             "cxx": CXX_FLAGS,
             "nvcc": get_nvcc_flags(["9.0"]),
         },
+        py_limited_api=True,
     )
     ext_modules.append(qattn_extension)
 
@@ -211,6 +216,7 @@ fused_extension = CUDAExtension(
         "cxx": CXX_FLAGS,
         "nvcc": get_nvcc_flags(["8.0", "8.9", "9.0", "12.0"]),
     },
+    py_limited_api=True,
 )
 ext_modules.append(fused_extension)
 
@@ -239,4 +245,5 @@ setup(
     ],
     ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtension.with_options(use_ninja=False)},
+    options={"bdist_wheel": {"py_limited_api": "cp39"}},
 )
