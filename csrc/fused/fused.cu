@@ -1,5 +1,5 @@
 #include <ATen/cuda/CUDAContext.h>
-#include <torch/extension.h>
+#include <torch/all.h>
 
 #include "../pytorch_extensions_utils.cuh"
 #include "../reduction_utils.cuh"
@@ -133,7 +133,7 @@ __global__ void MeanScaleKernel(T *__restrict__ input, int8_t *__restrict__ outp
 
   float block_max_val = vllm::blockReduceMax(max_val);
   float block_min_val = vllm::blockReduceMin(min_val);
-  float block_sum_val;
+  float block_sum_val = 0.0f;
 
   if constexpr (sub_mean)
   {
@@ -193,7 +193,7 @@ __global__ void MeanScaleKernel(T *__restrict__ input, int8_t *__restrict__ outp
 void transpose_pad_permute_cuda(
                 torch::Tensor input,
                 torch::Tensor output,
-                int tensor_layout)
+                int64_t tensor_layout)
 {
   CHECK_CUDA(input);
   CHECK_CUDA(output);
@@ -269,16 +269,16 @@ void scale_fuse_quant_cuda(
                 torch::Tensor input,
                 torch::Tensor output,
                 torch::Tensor scale,
-                int num_tokens,
-                float scale_max,
-                int tensor_layout)
+                int64_t num_tokens,
+                double scale_max,
+                int64_t tensor_layout)
 {
   CHECK_CUDA(input);
   CHECK_CUDA(output);
   CHECK_CUDA(scale);
 
-  // CHECK_DTYPE(output, at::ScalarType::Char);
-  CHECK_DTYPE(scale, at::ScalarType::Float);
+  // CHECK_DTYPE(output, torch::kInt8);
+  CHECK_DTYPE(scale, torch::kFloat);
 
   CHECK_CONTIGUOUS(input);
   CHECK_CONTIGUOUS(output);
