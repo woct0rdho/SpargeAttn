@@ -27,10 +27,10 @@ void qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_sm90(
                     torch::Tensor query_scale,
                     torch::Tensor key_scale,
                     torch::Tensor value_scale,
-                    int tensor_layout,
-                    int is_causal,
-                    int qk_quant_gran,
-                    float sm_scale)
+                    int64_t tensor_layout,
+                    int64_t is_causal,
+                    int64_t qk_quant_gran,
+                    double sm_scale)
 {
   CHECK_CUDA(query);
   CHECK_CUDA(key);
@@ -203,11 +203,11 @@ torch::Tensor qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_wi
                     torch::Tensor query_scale,
                     torch::Tensor key_scale,
                     torch::Tensor value_scale,
-                    int tensor_layout,
-                    int is_causal,
-                    int qk_quant_gran,
-                    float sm_scale,
-                    int return_pv_count)
+                    int64_t tensor_layout,
+                    int64_t is_causal,
+                    int64_t qk_quant_gran,
+                    double sm_scale,
+                    int64_t return_pv_count)
 {
   CHECK_CUDA(query);
   CHECK_CUDA(key);
