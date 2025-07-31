@@ -1,9 +1,11 @@
 [build-system]
 requires = [
+    "einops",
     "numpy",
     "packaging",
     "pybind11",
     "setuptools",
+    "tqdm",
 
     # torch version will be added by update_pyproject.py
     "torch",
