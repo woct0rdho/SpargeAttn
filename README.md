@@ -50,7 +50,6 @@ python setup.py install   # or pip install -e .
 ## Avalible API
 - `spas_sage2_attn_meansim_cuda`: SpargeAttn based on [SageAttention2](https://github.com/thu-ml/SageAttention).
 
-- `spas_sage_attn_meansim_cuda`: SpargeAttn based on [SageAttention](https://github.com/thu-ml/SageAttention).
 
 
 
