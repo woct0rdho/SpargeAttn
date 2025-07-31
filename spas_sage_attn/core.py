@@ -21,23 +21,27 @@ from einops import rearrange
 
 try:
     from . import _qattn_sm80
+    _qattn_sm80 = torch.ops.spas_sage_attn_qattn_sm80
     SM80_ENABLED = True
 except:
     SM80_ENABLED = False
 
 try:
     from . import _qattn_sm89
+    _qattn_sm89 = torch.ops.spas_sage_attn_qattn_sm89
     SM89_ENABLED = True
 except:
     SM89_ENABLED = False
 
 try:
     from . import _qattn_sm90
+    _qattn_sm90 = torch.ops.spas_sage_attn_qattn_sm90
     SM90_ENABLED = True
 except:
     SM90_ENABLED = False
 
 from . import _fused
+_fused = torch.ops.spas_sage_attn_fused
 
 def get_cuda_arch_versions():
     cuda_archs = []
