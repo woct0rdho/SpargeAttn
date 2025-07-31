@@ -25,6 +25,7 @@ from setuptools import setup, find_packages
 import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
 
+HAS_SM80 = False
 HAS_SM89 = False
 HAS_SM90 = False
 
@@ -49,7 +50,7 @@ def get_instantiations(src_dir: str):
     ]
 
 # Supported NVIDIA GPU architectures.
-SUPPORTED_ARCHS = {"8.0", "8.6", "8.7", "8.9", "9.0"}
+SUPPORTED_ARCHS = {"8.0", "8.6", "8.7", "8.9", "9.0", "12.0"}
 
 # Compiler flags.
 if os.name == "nt":
@@ -133,44 +134,56 @@ if not compute_capabilities:
     for i in range(device_count):
         major, minor = torch.cuda.get_device_capability(i)
         if major < 8:
-            raise RuntimeError(
-                "GPUs with compute capability below 8.0 are not supported.")
+            warnings.warn(f"skipping GPU {i} with compute capability {major}.{minor}")
+            continue
         compute_capabilities.add(f"{major}.{minor}")
 
 nvcc_cuda_version = get_nvcc_cuda_version(CUDA_HOME)
 if not compute_capabilities:
-    raise RuntimeError("No GPUs found. Please specify the target GPU architectures or build on a machine with GPUs.")
+    raise RuntimeError("No GPUs found. Please specify TORCH_CUDA_ARCH_LIST or build on a machine with GPUs.")
+else:
+    print(f"Detected compute capabilities: {compute_capabilities}")
+
+def has_capability(target):
+    return any(cc.startswith(target) for cc in compute_capabilities)
 
 # Validate the NVCC CUDA version.
 if nvcc_cuda_version < Version("12.0"):
     raise RuntimeError("CUDA 12.0 or higher is required to build the package.")
-if nvcc_cuda_version < Version("12.4"):
-    if any(cc.startswith("8.9") for cc in compute_capabilities):
-        raise RuntimeError(
-            "CUDA 12.4 or higher is required for compute capability 8.9.")
-    if any(cc.startswith("9.0") for cc in compute_capabilities):
-        raise RuntimeError(
-            "CUDA 12.4 or higher is required for compute capability 9.0.")
+if nvcc_cuda_version < Version("12.4") and has_capability("8.9"):
+    raise RuntimeError(
+        "CUDA 12.4 or higher is required for compute capability 8.9.")
+if nvcc_cuda_version < Version("12.3") and has_capability("9.0"):
+    raise RuntimeError(
+        "CUDA 12.3 or higher is required for compute capability 9.0.")
+if nvcc_cuda_version < Version("12.8") and has_capability("12.0"):
+    raise RuntimeError(
+        "CUDA 12.8 or higher is required for compute capability 12.0.")
 
 # Add target compute capabilities to NVCC flags.
 for capability in compute_capabilities:
-    num = capability[0] + capability[2]
+    # capability: "8.0+PTX" -> num: "80"
+    num = capability.split("+")[0].replace(".", "")
+    if num in {"90", "120"}:
+        # need to use sm90a instead of sm90 to use wgmma ptx instruction.
+        # need to use sm120a to use mxfp8/mxfp4/nvfp4 instructions.
+        num += "a"
+
     if num in {'80', '86', '87'}:
         HAS_SM80 = True
         CXX_FLAGS += ["-DHAS_SM80"]
-    elif num == '89':
+    elif num in {'89', '120a'}:
         HAS_SM89 = True
         CXX_FLAGS += ["-DHAS_SM89"]
-    elif num == '90':
-        num = '90a'
+    elif num == '90a':
         HAS_SM90 = True
         CXX_FLAGS += ["-DHAS_SM90"]
+
     NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=sm_{num}"]
     if capability.endswith("+PTX"):
         NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
 
 ext_modules = []
-
 
 sources = ["csrc/qattn/pybind.cpp"]
 
@@ -212,7 +225,7 @@ ext_modules.append(fused_extension)
 
 setup(
     name='spas_sage_attn',
-    version='0.1.0',
+    version='0.1.0' + os.environ.get("SPAS_SAGE_ATTN_WHEEL_VERSION_SUFFIX", ""),
     author='Jintao Zhang, Chendong Xiang, Haofeng Huang',
     author_email='jt-zhang6@gmail.com',
     packages=find_packages(),
