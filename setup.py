@@ -48,9 +48,11 @@ def get_instantiations(src_dir: str):
 # Compiler flags.
 if os.name == "nt":
     # TODO: Detect MSVC rather than OS
-    CXX_FLAGS = ["/O2", "/openmp", "/std:c++17", "-DENABLE_BF16"]
+    CXX_FLAGS = ["/O2", "/openmp", "/std:c++17", "/bigobj", "-DENABLE_BF16"]
+    LINK_FLAGS = []
 else:
     CXX_FLAGS = ["-g", "-O3", "-fopenmp", "-lgomp", "-std=c++17", "-DENABLE_BF16"]
+    LINK_FLAGS = []
 NVCC_FLAGS_COMMON = [
     "-O3",
     "-std=c++17",
@@ -158,6 +160,7 @@ if has_capability(("8.0", "8.6")):
             "cxx": CXX_FLAGS,
             "nvcc": get_nvcc_flags(["8.0", "8.6"]),
         },
+        extra_link_args=LINK_FLAGS,
     )
     ext_modules.append(qattn_extension)
 
@@ -175,6 +178,7 @@ if has_capability(("8.9", "12.0")):
             "cxx": CXX_FLAGS,
             "nvcc": get_nvcc_flags(["8.9", "12.0"]),
         },
+        extra_link_args=LINK_FLAGS,
     )
     ext_modules.append(qattn_extension)
 
@@ -193,6 +197,7 @@ if has_capability(("9.0",)):
             "cxx": CXX_FLAGS,
             "nvcc": get_nvcc_flags(["9.0"]),
         },
+        extra_link_args=LINK_FLAGS,
     )
     ext_modules.append(qattn_extension)
 
@@ -203,6 +208,7 @@ fused_extension = CUDAExtension(
         "cxx": CXX_FLAGS,
         "nvcc": get_nvcc_flags(["8.0", "8.6", "8.9", "9.0", "12.0"]),
     },
+    extra_link_args=LINK_FLAGS,
 )
 ext_modules.append(fused_extension)
 
