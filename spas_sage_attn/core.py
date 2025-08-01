@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import functools
+
 import torch
 from .utils import hyperparameter_check, get_block_map_meansim, get_block_map_meansim_fuse_quant, get_vanilla_qk_quant, block_map_lut_triton
 from .quant_per_block import per_block_int8, per_warp_int8
@@ -39,6 +41,7 @@ except:
 
 from . import _fused
 
+@functools.cache
 def get_cuda_arch_versions():
     cuda_archs = []
     for i in range(torch.cuda.device_count()):
