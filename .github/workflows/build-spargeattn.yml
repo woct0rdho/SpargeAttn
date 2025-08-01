@@ -117,8 +117,8 @@ jobs:
             }
           }
           $Env:CIBW_BUILD_VERBOSITY = "1"
-          # torch may conflict with cibuildwheel's pinned dependency versions
-          $Env:CIBW_DEPENDENCY_VERSIONS = "latest"
+          # Sometimes torch may conflict with cibuildwheel's pinned dependency versions
+          # $Env:CIBW_DEPENDENCY_VERSIONS = "latest"
           cibuildwheel .
 
       - uses: actions/upload-artifact@v4
