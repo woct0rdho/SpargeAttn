@@ -141,7 +141,11 @@ def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=Non
         # k = k - km
     headdim = q.size(-1)
 
-    q_int8, q_scale, k_int8, k_scale = get_vanilla_qk_quant(q, k, km)
+    arch = get_cuda_arch_versions()[q.device.index]
+    if arch == "sm90":
+        q_int8, q_scale, k_int8, k_scale = get_vanilla_qk_quant(q, k, km, 64, 128)
+    else:
+        q_int8, q_scale, k_int8, k_scale = get_vanilla_qk_quant(q, k, km)
     lut, valid_block_num = block_map_lut_triton(block_map=mask_id)
     if scale is None:
         scale = 1.0 / (headdim ** 0.5)
@@ -150,7 +154,6 @@ def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=Non
 
     pvthreshd = hyperparameter_check(pvthreshd, q.size(-3), q.device)
 
-    arch = get_cuda_arch_versions()[q.device.index]
     if arch in {"sm89", "sm90", "sm120"}:
         ## quant v
         b, h_kv, kv_len, head_dim = v.shape
