@@ -156,7 +156,8 @@ if has_capability(("8.0", "8.6")):
         sources=sources,
         extra_compile_args={
             "cxx": CXX_FLAGS,
-            "nvcc": get_nvcc_flags(["8.0", "8.6"]),
+            # Build binary for sm80 if sm86 is detected. No need to build binary for sm86
+            "nvcc": get_nvcc_flags(["8.0"]),
         },
     )
     ext_modules.append(qattn_extension)
@@ -201,7 +202,7 @@ fused_extension = CUDAExtension(
     sources=["csrc/fused/pybind.cpp", "csrc/fused/fused.cu"],
     extra_compile_args={
         "cxx": CXX_FLAGS,
-        "nvcc": get_nvcc_flags(["8.0", "8.6", "8.9", "9.0", "12.0"]),
+        "nvcc": get_nvcc_flags(["8.0", "8.9", "9.0", "12.0"]),
     },
 )
 ext_modules.append(fused_extension)
