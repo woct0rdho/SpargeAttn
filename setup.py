@@ -147,7 +147,7 @@ if nvcc_cuda_version < Version("12.4"):
 
 # Add target compute capabilities to NVCC flags.
 for capability in compute_capabilities:
-    num = capability[0] + capability[2]
+    num = capability.replace(".", "")
     if num == '90':
         num = '90a'
         HAS_SM90 = True
