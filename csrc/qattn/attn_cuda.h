@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 by SpargAttn team.
+ * Copyright (c) 2025 by SpargeAttn team.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,54 @@ void qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale(torch::Tens
     float sm_scale);
 
 torch::Tensor qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold(torch::Tensor query,
+    torch::Tensor key,
+    torch::Tensor value,
+    torch::Tensor output,
+    torch::Tensor lut,
+    torch::Tensor valid_block_num,
+    torch::Tensor pv_threshold,
+    torch::Tensor query_scale,
+    torch::Tensor key_scale,
+    torch::Tensor value_scale,
+    int tensor_layout,
+    int is_causal,
+    int qk_quant_gran,
+    float sm_scale,
+    int return_pv_count);
+
+torch::Tensor qk_int8_sv_f8_accum_f16_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold(torch::Tensor query,
+    torch::Tensor key,
+    torch::Tensor value,
+    torch::Tensor output,
+    torch::Tensor lut,
+    torch::Tensor valid_block_num,
+    torch::Tensor pv_threshold,
+    torch::Tensor query_scale,
+    torch::Tensor key_scale,
+    torch::Tensor value_scale,
+    int tensor_layout,
+    int is_causal,
+    int qk_quant_gran,
+    float sm_scale,
+    int return_pv_count);
+
+void qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_sm90(
+    torch::Tensor query,
+    torch::Tensor key,
+    torch::Tensor value,
+    torch::Tensor output,
+    torch::Tensor lut,
+    torch::Tensor valid_block_num,
+    torch::Tensor query_scale,
+    torch::Tensor key_scale,
+    torch::Tensor value_scale,
+    int tensor_layout,
+    int is_causal,
+    int qk_quant_gran,
+    float sm_scale);
+
+torch::Tensor qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold_sm90(
+    torch::Tensor query,
     torch::Tensor key,
     torch::Tensor value,
     torch::Tensor output,
