@@ -316,10 +316,16 @@ def fill_causal_mask_triton(mask, BqdivBk:float):
     return mask
 
 
-def get_block_map_meansim(q, k, is_causal=False, BLKQ=128, BLKK=64, simthreshd1=0.1, cdfthreshd=0.9, is_sparse=True, return_lut=False, attention_sink=False):
+def get_block_map_meansim(q, k, is_causal=False, BLKQ=128, BLKK=64, simthreshd1=0.1, cdfthreshd=0.9, topk=None, is_sparse=True, return_lut=False, attention_sink=False):
+    assert (cdfthreshd is None and topk is not None) \
+        or (cdfthreshd is not None and topk is None), "Only one of cdfthreshd and topk can be set."
+
     Headnum = q.size(1)
     simthreshd1 = hyperparameter_check(simthreshd1, Headnum, q.device)
-    cdfthreshd = hyperparameter_check(cdfthreshd, Headnum, q.device)
+    if cdfthreshd is not None:
+        cdfthreshd = hyperparameter_check(cdfthreshd, Headnum, q.device)
+    if topk is not None:
+        topk = hyperparameter_check(topk, Headnum, q.device)
     nq = (q.shape[-2] + BLKQ - 1) // BLKQ
     nk = (k.shape[-2] + BLKK - 1) // BLKK
     pooled_qblocks, sim_qblocks = get_pool_sim_triton_simmean(q, BLKQ, simthreshd1)
@@ -339,9 +345,13 @@ def get_block_map_meansim(q, k, is_causal=False, BLKQ=128, BLKK=64, simthreshd1=
     sorted_score = torch.sort(pooled_score, dim=-1, descending=True)
     cdf = torch.cumsum(sorted_score.values, dim=-1)
     B, H, Q, K = cdf.shape
-    cdfthreshd_ts = cdfthreshd.view(1, H, 1, 1)
-    cdfthreshd_ts = cdfthreshd_ts.expand(B, -1, Q, 1).contiguous()
-    num_to_select = torch.searchsorted(cdf, cdfthreshd_ts, right=True).squeeze(-1)
+    if cdfthreshd is not None:
+        cdfthreshd_ts = cdfthreshd.view(1, H, 1, 1)
+        cdfthreshd_ts = cdfthreshd_ts.expand(B, -1, Q, 1).contiguous()
+        num_to_select = torch.searchsorted(cdf, cdfthreshd_ts, right=True).squeeze(-1)
+    else:
+        num_to_select = (topk * K).to(torch.int64).view(1, H, 1).expand(B, -1, Q).contiguous()
+
     final_map = torch.zeros_like(pooled_score, dtype=torch.bool)
     final_map[~sim_kblocks] = 1
     final_map[~sim_qblocks] = 1
@@ -358,10 +368,16 @@ def get_block_map_meansim(q, k, is_causal=False, BLKQ=128, BLKK=64, simthreshd1=
         lut, valid_block_num = block_map_lut_triton(final_map)
         return lut, valid_block_num
 
-def get_block_map_meansim_fuse_quant(q, k, km=None, is_causal=False, BLKQ=128, BLKK=64, simthreshd1=0.1, cdfthreshd=0.9, is_sparse=True, return_lut=False, attention_sink=False):
+def get_block_map_meansim_fuse_quant(q, k, km=None, is_causal=False, BLKQ=128, BLKK=64, simthreshd1=0.1, cdfthreshd=0.9, topk=None, is_sparse=True, return_lut=False, attention_sink=False):
+    assert (cdfthreshd is None and topk is not None) \
+        or (cdfthreshd is not None and topk is None), "Only one of cdfthreshd and topk can be set."
+    
     Headnum = q.size(1)
     simthreshd1 = hyperparameter_check(simthreshd1, Headnum, q.device)
-    cdfthreshd = hyperparameter_check(cdfthreshd, Headnum, q.device)
+    if cdfthreshd is not None:
+        cdfthreshd = hyperparameter_check(cdfthreshd, Headnum, q.device)
+    if topk is not None:
+        topk = hyperparameter_check(topk, Headnum, q.device)
     nq = (q.shape[-2] + BLKQ - 1) // BLKQ
     nk = (k.shape[-2] + BLKK - 1) // BLKK
     pooled_qblocks, sim_qblocks, q_int8, q_scale = get_pool_sim_triton_simmean_fuse_quant(q, None, BLKQ, simthreshd1)
@@ -381,9 +397,13 @@ def get_block_map_meansim_fuse_quant(q, k, km=None, is_causal=False, BLKQ=128, B
     sorted_score = torch.sort(pooled_score, dim=-1, descending=True)
     cdf = torch.cumsum(sorted_score.values, dim=-1)
     B, H, Q, K = cdf.shape
-    cdfthreshd_ts = cdfthreshd.view(1, H, 1, 1)
-    cdfthreshd_ts = cdfthreshd_ts.expand(B, -1, Q, 1).contiguous()
-    num_to_select = torch.searchsorted(cdf, cdfthreshd_ts, right=True).squeeze(-1)
+    if cdfthreshd is not None:
+        cdfthreshd_ts = cdfthreshd.view(1, H, 1, 1)
+        cdfthreshd_ts = cdfthreshd_ts.expand(B, -1, Q, 1).contiguous()
+        num_to_select = torch.searchsorted(cdf, cdfthreshd_ts, right=True).squeeze(-1)
+    else:
+        num_to_select = (topk * K).to(torch.int64).view(1, H, 1).expand(B, -1, Q).contiguous()
+    
     final_map = torch.zeros_like(pooled_score, dtype=torch.bool)
     final_map[~sim_kblocks] = 1
     final_map[~sim_qblocks] = 1
