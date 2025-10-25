@@ -64,12 +64,13 @@ attn_output = spas_sage2_attn_meansim_cuda(q, k, v, simthreshd1=0.6, cdfthreshd=
 
 You can tune `simthreshd1` and `cdfthreshd` to balance between attention accuracy (higher values) and sparsity (lower values). **However, for optimal accuracy and sparsity performance, we recommend running a tuning process before inference, as described below.**  
 
-Top-k selection is also supported as an alternative to `cdfthreshd`. You can call `spas_sage_attn_meansim_topk_cuda` or `spas_sage2_attn_meansim_topk_cuda` and set the fraction of top elements via the `topk` parameter:
+### SpargeAttn API based on Top-K selection
+Top-K selection is also supported as an alternative to `cdfthreshd`. We find that Top-K sometimes can achieve better performance than Top-P in SpargeAttn. You can call the API as follows and set the fraction of top elements via the `topk` parameter:
 
 ```python
 from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 
-attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=0.6, topk=0.3, pvthreshd=15, is_causal=False)
+attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.25, pvthreshd=15, is_causal=False)
 ```
 
 **Note: automatic tuning for `topk` is not supported at the moment.**
