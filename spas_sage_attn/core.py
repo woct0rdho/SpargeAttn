@@ -22,8 +22,9 @@ from einops import rearrange
 import spas_sage_attn._qattn as qattn
 import spas_sage_attn._fused as fused
 
+SAGE2PP_ENABLED = True
 try:
-    from qattn import qk_int8_sv_f8_accum_f16_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold
+    from spas_sage_attn._qattn import qk_int8_sv_f8_accum_f16_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold
 except:
     print("Warning: Sage2++ NOT enabled")
     SAGE2PP_ENABLED = False
