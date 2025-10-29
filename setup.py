@@ -26,6 +26,7 @@ import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
 
 HAS_SM90 = False
+SAGE2PP_ENABLED = True
 
 def run_instantiations(src_dir: str):
     base_path = Path(src_dir)
@@ -144,6 +145,9 @@ if nvcc_cuda_version < Version("12.4"):
     if any(cc.startswith("9.0") for cc in compute_capabilities):
         raise RuntimeError(
             "CUDA 12.4 or higher is required for compute capability 9.0.")
+if nvcc_cuda_version < Version("12.8"):
+    warnings.warn("CUDA 12.8 or higher is required for Sage2++")
+    SAGE2PP_ENABLED = False
 
 # Add target compute capabilities to NVCC flags.
 for capability in compute_capabilities:
@@ -152,9 +156,15 @@ for capability in compute_capabilities:
         num = '90a'
         HAS_SM90 = True
         CXX_FLAGS += ["-DHAS_SM90"]
+    if num == '80' or num == '86' or num == '87':
+        SAGE2PP_ENABLED = False
+    
     NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=sm_{num}"]
     if capability.endswith("+PTX"):
         NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
+
+if SAGE2PP_ENABLED:
+    CXX_FLAGS += ["-DSAGE2PP_ENABLED"]
 
 ext_modules = []
 
