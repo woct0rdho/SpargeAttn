@@ -28,7 +28,7 @@ The official implementation of [SpargeAttn](https://arxiv.org/abs/2502.18137), a
 ## Project Updates
 - [Sparse SageAttention1 API](https://github.com/jt-zhang/Sparse_SageAttention_API) and [Sparse SageAttention2 API](#usage-examples) can compute attention with any block sparse pattern very fast.
 - SpargeAttn based on [SageAttention2++](https://arxiv.org/abs/2505.21136) will be released around June 25.
-- [2025-05-11]: Add a **very simple usage without tuning or calibration**: `o = spas_sage2_attn_meansim_cuda(q, k, v)`.
+- [2025-05-11]: Add a **very simple usage without tuning or calibration**: `o = spas_sage2_attn_meansim_topk_cuda(q, k, v)`.
 - [2025-05-02]: 🎉SpargeAttn and [SageAttention2](https://github.com/thu-ml/SageAttention) are accepted by ICML 2025!
 - [2025-01-24]: 🎉[SageAttention](https://github.com/thu-ml/SageAttention) is accepted by ICLR 2025! 
 
@@ -48,9 +48,13 @@ python setup.py install   # or pip install -e .
 
 
 ## Avalible API
-- `spas_sage2_attn_meansim_cuda`: SpargeAttn based on [SageAttention2](https://github.com/thu-ml/SageAttention).
+- `spas_sage2_attn_meansim_topk_cuda`: SpargeAttn based on [SageAttention2](https://github.com/thu-ml/SageAttention) that **we recommend using.**
 
-- `spas_sage_attn_meansim_cuda`: SpargeAttn based on [SageAttention](https://github.com/thu-ml/SageAttention).
+- `spas_sage2_attn_meansim_cuda`: SpargeAttn based on [SageAttention2](https://github.com/thu-ml/SageAttention) that we do not recommend.
+
+- `spas_sage_attn_meansim_topk_cuda`: SpargeAttn based on [SageAttention](https://github.com/thu-ml/SageAttention) that **we recommend using.**
+
+- `spas_sage_attn_meansim_cuda`: SpargeAttn based on [SageAttention](https://github.com/thu-ml/SageAttention) that we do not recommend.
 
 
 
@@ -59,10 +63,11 @@ python setup.py install   # or pip install -e .
 ```python
 from spas_sage_attn import spas_sage2_attn_meansim_cuda
 
-attn_output = spas_sage2_attn_meansim_cuda(q, k, v, simthreshd1=0.6, cdfthreshd=0.97, pvthreshd=15, is_causal=False)
+attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.35, pvthreshd=15, is_causal=False)
 ```
+You can adjust `topk` to balance between attention accuracy (higher `topk` is more accurate) and sparsity (lower `topk` is more sparse). 
 
-You can tune `simthreshd1` and `cdfthreshd` to balance between attention accuracy (higher values) and sparsity (lower values). **However, for optimal accuracy and sparsity performance, we recommend running a tuning process before inference, as described below.**  
+<!-- For optimal accuracy and sparsity performance, we recommend running a tuning process before inference. -->
 
 ### SpargeAttn API based on Top-K selection
 Top-K selection is also supported as an alternative to `cdfthreshd`. We find that Top-K sometimes can achieve better performance than Top-P in SpargeAttn. You can call the API as follows and set the fraction of top elements via the `topk` parameter:
@@ -70,10 +75,10 @@ Top-K selection is also supported as an alternative to `cdfthreshd`. We find tha
 ```python
 from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 
-attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.25, pvthreshd=15, is_causal=False)
+attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.35, pvthreshd=15, is_causal=False)
 ```
 
-**Note: automatic tuning for `topk` is not supported at the moment.**
+Note: Automatic tuning for `topk` is not currently supported.
 
 ### Sparge+SageAttention2++ with Any Block-Sparse Pattern
 
@@ -85,7 +90,7 @@ block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, scale=None, pvthreshd=20, at
 
 In this API, we support computing $S=QK^T$ in any block sparse pattern per attention head. And we compute $PV$ multiplication with further acceleration. Specifically, the attention mask per head, `mask_id`, is of shape `(batch_size, num_qo_heads, qo_seq_len // BLOCK_M, kv_seq_len // BLOCK_N)`. Currently, the supported block size is aligned to that of SpargeAttention, which is (BLOCK_M = 128, BLOCK_N = 64). The lower `pvthreshd`, the more sparsity for `PV` Matmul and faster attention.
 
-
+<!-- 
 ### CogVideoX
 
 Tuning:  
@@ -122,7 +127,7 @@ Our approach is universal, and we warmly welcome contributions! Feel free to sub
 | want2v-1.3B  | evaluate/wan_example.py | [link](https://huggingface.co/Xiang-cd/sparge-attention-model-zoo/tree/main/want2v-1.3B)
 | Flux  | evaluate/flux_example.py  | TBD 
 
-
+-->
 
 ## Performance
 ![Local Image](./assets/exp_table.png)
