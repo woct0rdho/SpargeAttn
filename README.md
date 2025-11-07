@@ -59,9 +59,21 @@ python setup.py install   # or pip install -e .
 
 
 ## Usage Examples
+### Plug-and-Play Usage
+Just replace `torch.nn.functional.scaled_dot_product_attention` API using `spas_sage2_attn_meansim_topk_cuda`:
+```diff
+from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
+
+- attn_output = torch.nn.functional.scaled_dot_product_attention(q, k, v, is_causal=False)  # is_causal can be True
+
++ attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, topk=0.4, is_causal=False) # is_causal can be True
+```
+
+
+
 ### A Simple Usage Without Tuning for Any Model
 ```python
-from spas_sage_attn import spas_sage2_attn_meansim_cuda
+from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 
 attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.35, pvthreshd=15, is_causal=False)
 ```
