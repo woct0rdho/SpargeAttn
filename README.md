@@ -66,7 +66,7 @@ from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 
 - attn_output = torch.nn.functional.scaled_dot_product_attention(q, k, v, is_causal=False)  # is_causal can be True
 
-+ attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, topk=0.4, is_causal=False) # is_causal can be True
++ attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, topk=0.5, is_causal=False) # is_causal can be True
 ```
 
 
@@ -75,7 +75,7 @@ from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 ```python
 from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 
-attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.35, pvthreshd=15, is_causal=False)
+attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.5, pvthreshd=15, is_causal=False)
 ```
 You can adjust `topk` to balance between attention accuracy (higher `topk` is more accurate) and sparsity (lower `topk` is more sparse). 
 
@@ -87,7 +87,7 @@ Top-K selection is also supported as an alternative to `cdfthreshd`. We find tha
 ```python
 from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 
-attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.35, pvthreshd=15, is_causal=False)
+attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, simthreshd1=-0.1, topk=0.5, pvthreshd=15, is_causal=False)
 ```
 
 Note: Automatic tuning for `topk` is not currently supported.
