@@ -45,8 +45,8 @@ def main():
         prompts = file.readlines()
     selected_prompts = [p.strip() for p in prompts[args.start:args.end]]
 
-    pipe_id = "/root/autodl-tmp/weiqi/hf_cache/hub/models--Lightricks--LTX-Video-0.9.7-dev/snapshots/2101082f5eb5540770a2df43747feadb6f69b889"
-    upscaler_id = "/root/autodl-tmp/weiqi/hf_cache/hub/models--Lightricks--ltxv-spatial-upscaler-0.9.7/snapshots/c96c168c2bd8bbc82c9fe8259e5f89f8b2ea293f"
+    pipe_id = "Lightricks/LTX-Video-0.9.7-dev"
+    upscaler_id = "Lightricks/ltxv-spatial-upscaler-0.9.7"
 
     pipe = LTXConditionPipeline.from_pretrained(
         pipe_id,

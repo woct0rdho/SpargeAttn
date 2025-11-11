@@ -50,9 +50,9 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     gen = torch.Generator(device=device).manual_seed(42)
 
-    if args.model == "wan2_1-1_3b": model_id = "/root/.cache/huggingface/hub/Wan-AI/Wan2.1-T2V-1.3B-Diffusers"
-    elif args.model == "wan2_1-14b": model_id = "/root/.cache/huggingface/hub/Wan-AI/Wan2.1-T2V-14B-Diffusers"
-    else: model_id = "/root/.cache/huggingface/hub/Wan-AI/Wan2.2-T2V-A14B-Diffusers"
+    if args.model == "wan2_1-1_3b": model_id = "Wan-AI/Wan2.1-T2V-1.3B-Diffusers"
+    elif args.model == "wan2_1-14b": model_id = "Wan-AI/Wan2.1-T2V-14B-Diffusers"
+    else: model_id = "Wan-AI/Wan2.2-T2V-A14B-Diffusers"
 
     pipe = WanPipeline.from_pretrained(
         model_id,

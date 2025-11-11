@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model_id = "/root/autodl-tmp/weiqi/.cache/huggingface/hub/models--hunyuanvideo-community--HunyuanVideo/snapshots/e8c2aaa66fe3742a32c11a6766aecbf07c56e773"
+    model_id = "hunyuanvideo-community/HunyuanVideo"
     pipe = HunyuanVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
     set_sparge_hunyuan(pipe.transformer, mode=args.mode, value=args.value)
 

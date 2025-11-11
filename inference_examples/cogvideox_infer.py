@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
 
     pipe = CogVideoXPipeline.from_pretrained(
-        "/root/autodl-tmp/weiqi/.cache/huggingface/hub/models--THUDM--CogVideoX-2b/snapshots/1137dacfc2c9c012bed6a0793f4ecf2ca8e7ba01",
+        "zai-org/CogVideoX-2b",
         torch_dtype=dtype_,
         local_files_only=True,
     ).to(device)
