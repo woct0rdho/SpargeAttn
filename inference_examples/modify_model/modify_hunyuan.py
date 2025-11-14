@@ -133,12 +133,21 @@ class SpargeHunyuanVideoAttnProcessor2_0:
 
 def set_sparge_hunyuan(
     model: HunyuanVideoTransformer3DModel,
-    verbose=False,
     mode: str = None,
     value: Optional[float] = None,
 ):
+    """
+    Set SpargeHunyuanVideoAttnProcessor2_0 on all attention blocks.
+    - `transformer_blocks`: dual-stream (video + text mixed)
+    - `single_transformer_blocks`: single-stream (after concat)
+    """
+    # Dual-stream blocks
+    for idx, block in enumerate(model.transformer_blocks):
+        if block.attn.processor != None: 
+            processor = SpargeHunyuanVideoAttnProcessor2_0(idx=idx, mode=mode, value=value)
+            block.attn.set_processor(processor)
+    # Single-stream blocks
     for idx, block in enumerate(model.single_transformer_blocks):
         if block.attn.processor != None: 
-            block.attn.verbose = verbose
             processor = SpargeHunyuanVideoAttnProcessor2_0(idx=idx, mode=mode, value=value)
             block.attn.set_processor(processor)
