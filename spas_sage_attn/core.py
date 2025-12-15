@@ -55,7 +55,11 @@ def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_caus
         # k = k - km
     headdim = q.size(-1)
 
-    lut, valid_block_num, q_int8, q_scale, k_int8, k_scale = get_block_map_meansim_fuse_quant(q, k, km, is_causal=is_causal, simthreshd1=simthreshd1, cdfthreshd=cdfthreshd, return_lut=True, attention_sink=attention_sink)  # 
+    arch = get_cuda_arch_versions()[q.device.index]
+    if arch == "sm90":
+        lut, valid_block_num, q_int8, q_scale, k_int8, k_scale = get_block_map_meansim_fuse_quant(q, k, km, is_causal=is_causal, simthreshd1=simthreshd1, cdfthreshd=cdfthreshd, return_lut=True, attention_sink=attention_sink, BLKQ=64, BLKK=128)
+    else:
+        lut, valid_block_num, q_int8, q_scale, k_int8, k_scale = get_block_map_meansim_fuse_quant(q, k, km, is_causal=is_causal, simthreshd1=simthreshd1, cdfthreshd=cdfthreshd, return_lut=True, attention_sink=attention_sink, BLKQ=128, BLKK=64)
 
     if scale is None:
         scale = 1.0 / (headdim ** 0.5)
@@ -66,7 +70,7 @@ def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_caus
 
     ## quant v
     b, h_kv, kv_len, head_dim = v.shape
-    padded_len = (kv_len + 63) // 64 * 64
+    padded_len = (kv_len + 127) // 128 * 128
     v_transposed_permutted = torch.empty((b, h_kv, head_dim, padded_len), dtype=v.dtype, device=v.device)
     fused.transpose_pad_permute_cuda(v, v_transposed_permutted, 1)
     v_fp8 = torch.empty(v_transposed_permutted.shape, dtype=torch.float8_e4m3fn, device=v.device)
@@ -77,7 +81,6 @@ def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_caus
     _is_causal = 1 if is_causal else 0
     o = torch.empty_like(q)
        
-    arch = get_cuda_arch_versions()[q.device.index]
     if arch == "sm90":
         qattn.qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold_sm90(q_int8, k_int8, v_fp8, o, lut, valid_block_num, pvthreshd, q_scale, k_scale, v_scale, 1, False, 1, scale, 0)
     elif SAGE2PP_ENABLED:
@@ -115,7 +118,11 @@ def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is
         # k = k - km
     headdim = q.size(-1)
 
-    lut, valid_block_num, q_int8, q_scale, k_int8, k_scale = get_block_map_meansim_fuse_quant(q, k, km, is_causal=is_causal, simthreshd1=simthreshd1, cdfthreshd=cdfthreshd, topk=topk, return_lut=True, attention_sink=attention_sink)  # 
+    arch = get_cuda_arch_versions()[q.device.index]
+    if arch == "sm90":
+        lut, valid_block_num, q_int8, q_scale, k_int8, k_scale = get_block_map_meansim_fuse_quant(q, k, km, is_causal=is_causal, simthreshd1=simthreshd1, cdfthreshd=cdfthreshd, topk=topk, return_lut=True, attention_sink=attention_sink, BLKQ=64, BLKK=128)
+    else:
+        lut, valid_block_num, q_int8, q_scale, k_int8, k_scale = get_block_map_meansim_fuse_quant(q, k, km, is_causal=is_causal, simthreshd1=simthreshd1, cdfthreshd=cdfthreshd, topk=topk, return_lut=True, attention_sink=attention_sink, BLKQ=128, BLKK=64)
 
     if scale is None:
         scale = 1.0 / (headdim ** 0.5)
@@ -126,7 +133,7 @@ def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is
 
     ## quant v
     b, h_kv, kv_len, head_dim = v.shape
-    padded_len = (kv_len + 63) // 64 * 64
+    padded_len = (kv_len + 127) // 128 * 128
     v_transposed_permutted = torch.empty((b, h_kv, head_dim, padded_len), dtype=v.dtype, device=v.device)
     fused.transpose_pad_permute_cuda(v, v_transposed_permutted, 1)
     v_fp8 = torch.empty(v_transposed_permutted.shape, dtype=torch.float8_e4m3fn, device=v.device)
@@ -137,7 +144,6 @@ def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is
     _is_causal = 1 if is_causal else 0
     o = torch.empty_like(q)
        
-    arch = get_cuda_arch_versions()[q.device.index]
     if arch == "sm90":
         qattn.qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold_sm90(q_int8, k_int8, v_fp8, o, lut, valid_block_num, pvthreshd, q_scale, k_scale, v_scale, 1, False, 1, scale, 0)
     elif SAGE2PP_ENABLED:
@@ -180,7 +186,7 @@ def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=Non
     if arch == "sm90":
         q_int8, q_scale, k_int8, k_scale = get_vanilla_qk_quant(q, k, km, 64, 128)
     else:
-        q_int8, q_scale, k_int8, k_scale = get_vanilla_qk_quant(q, k, km)
+        q_int8, q_scale, k_int8, k_scale = get_vanilla_qk_quant(q, k, km, 128, 64)
     lut, valid_block_num = block_map_lut_triton(block_map=mask_id)
     if scale is None:
         scale = 1.0 / (headdim ** 0.5)
@@ -191,7 +197,7 @@ def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=Non
 
     ## quant v
     b, h_kv, kv_len, head_dim = v.shape
-    padded_len = (kv_len + 63) // 64 * 64
+    padded_len = (kv_len + 127) // 128 * 128
     v_transposed_permutted = torch.empty((b, h_kv, head_dim, padded_len), dtype=v.dtype, device=v.device)
     fused.transpose_pad_permute_cuda(v, v_transposed_permutted, 1)
     v_fp8 = torch.empty(v_transposed_permutted.shape, dtype=torch.float8_e4m3fn, device=v.device)
