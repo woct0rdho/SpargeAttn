@@ -51,9 +51,11 @@ The official implementation of [SpargeAttn](https://arxiv.org/abs/2502.18137), a
 
 ## Project Updates
 - **Please use the `spas_sage2_attn_meansim_topk_cuda` and `block_sparse_sage2_attn_cuda` APIs.**
-- SpargeAttn based on [SageAttention2++](https://arxiv.org/abs/2505.21136) is released.
-- [2025-05-11]: Add a **very simple usage without tuning or calibration**: `o = spas_sage2_attn_meansim_topk_cuda(q, k, v)`.
-- [2025-05-02]: 🎉SpargeAttn and [SageAttention2](https://github.com/thu-ml/SageAttention) are accepted by ICML 2025!
+- [2025-07]: Release a Triton Kernel example. 
+- [2025-06]: SpargeAttn based on [SageAttention2++](https://arxiv.org/abs/2505.21136) is released.
+- [2025-05]: Add a **very simple usage without tuning or calibration**: `o = spas_sage2_attn_meansim_topk_cuda(q, k, v)`.
+- [2025-05]: 🎉SpargeAttn and [SageAttention2](https://github.com/thu-ml/SageAttention) are accepted by ICML 2025!
+- [2025-03] Support high acceleration on more GPUs, e.g., H100.
 
 ## Installation
 ### Base environment
