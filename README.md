@@ -20,7 +20,7 @@ from spas_sage_attn import block_sparse_sage2_attn_cuda
 attn_output = block_sparse_sage2_attn_cuda(q, k, v, mask_id=None):
 ```
 
-In this API, we **support computing attention in any block sparse mask per attention head**. Specifically, the attention mask per head, `mask_id`, is of shape `(batch_size, num_heads, seq_len // 128, seq_len // 64)`. Currently, the block size is 128x64.
+In this API, we **support computing attention in any block sparse mask per attention head**. Specifically, the per-head attention mask `mask_id` has shape `(batch_size, num_heads, ⌈seq_len / 128⌉, ⌈seq_len // 64⌉)` and consists of `0` and `1`. Currently, the block size is 128×64.
 
 ---
 The official implementation of [SpargeAttn](https://arxiv.org/abs/2502.18137), a universal training-free sparse attention accelerating language, image, and video models.
@@ -112,7 +112,7 @@ from spas_sage_attn import block_sparse_sage2_attn_cuda
 attn_output = block_sparse_sage2_attn_cuda(q, k, v, mask_id=None):
 ```
 
-In this API, we **support computing attention for any block-sparse mask per attention head**. Specifically, the attention mask per head, `mask_id`, is of shape `(batch_size, num_heads, seq_len // 128, seq_len // 64)`. Currently, the block size is 128x64.
+In this API, we **support computing attention for any block-sparse mask per attention head**. Specifically, the per-head attention mask `mask_id` has shape `(batch_size, num_heads, ⌈seq_len / 128⌉, ⌈seq_len // 64⌉)` and consists of `0` and `1`. Currently, the block size is 128×64.
 
 <!-- 
 ### CogVideoX
