@@ -1,6 +1,6 @@
 # SpargeAttention
 
-## Recommend API
+## Recommended API
 We highly recommend using the `spas_sage2_attn_meansim_topk_cuda` and `block_sparse_sage2_attn_cuda` APIs. They are plug-and-play and customizable:
 
 ### Plug-and-Play API
@@ -72,7 +72,7 @@ python setup.py install   # or pip install -e .
 ```
 
 
-## Avalible API
+## Available API
 - `spas_sage2_attn_meansim_topk_cuda`: SpargeAttn based on [SageAttention2](https://github.com/thu-ml/SageAttention) that **we recommend using.**
 
 - `spas_sage2_attn_meansim_cuda`: SpargeAttn based on [SageAttention2](https://github.com/thu-ml/SageAttention) that we do not recommend.
@@ -95,7 +95,7 @@ from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 ```
 
 
-### Plug-and-Play API
+## Plug-and-Play API
 ```python
 from spas_sage_attn import spas_sage2_attn_meansim_topk_cuda
 
@@ -104,7 +104,7 @@ attn_output = spas_sage2_attn_meansim_topk_cuda(q, k, v, topk=0.5, is_causal=Fal
 You can adjust `topk` to balance between attention accuracy (higher `topk` is more accurate) and sparsity (lower `topk` is more sparse). 
 
 
-### Customize your Block-Sparse Mask API
+## Customize your Block-Sparse Mask API
 
 ```python
 from spas_sage_attn import block_sparse_sage2_attn_cuda
