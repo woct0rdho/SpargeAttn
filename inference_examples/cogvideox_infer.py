@@ -29,27 +29,16 @@ if __name__ == "__main__":
     video_dir = f"inference_examples/videos/cogvideox/{dir_name}"
     os.makedirs(video_dir, exist_ok=True)
 
-    dtype_ = torch.bfloat16
-    num_frames_ = 49
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
     with open(prompt_path, "r", encoding="utf-8") as file:
         prompts = file.readlines()
     selected_prompts = [p.strip() for p in prompts[args.start:args.end]]
 
-
-    pipe = CogVideoXPipeline.from_pretrained(
-        "zai-org/CogVideoX-2b",
-        torch_dtype=dtype_,
-        local_files_only=True,
-    ).to(device)
+    pipe = CogVideoXPipeline.from_pretrained("THUDM/CogVideoX-2b", torch_dtype=torch.bfloat16)
     set_sparge_cogvideox(pipe.transformer, mode=args.mode, value=args.value)
 
     pipe.enable_model_cpu_offload()
     pipe.vae.enable_slicing()
     pipe.vae.enable_tiling()
-    pipe.vae.decoder_chunk_size = 1
 
     for local_i, prompt in tqdm(enumerate(selected_prompts), total=len(selected_prompts)):
         global_i = args.start + local_i
@@ -57,9 +46,9 @@ if __name__ == "__main__":
             prompt=prompt,
             num_videos_per_prompt=1,
             num_inference_steps=50,
-            num_frames=num_frames_,
+            num_frames=49,
             guidance_scale=6,
-            generator=torch.Generator(device=device).manual_seed(42),
+            generator=torch.Generator(device="cuda").manual_seed(42),
         ).frames[0]
 
         export_to_video(video, f"{video_dir}/{global_i}.mp4", fps=8)
