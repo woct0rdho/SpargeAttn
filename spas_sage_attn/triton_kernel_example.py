@@ -46,7 +46,15 @@ def spas_sage_attn_meansim(q, k, v, attn_mask=None, dropout_p=0.0, is_causal=Fal
     # k_block_indices[:] = 1
     o = forward(q_int8, k_int8, k_block_indices, v, q_scale, k_scale, pvthreshd, is_causal=is_causal, tensor_layout="HND", output_dtype=dtype)
 
-    return o
+    if return_sparsity:
+        B, H, Q, K = k_block_indices.shape
+        if is_causal is False:
+            qk_sparsity = 1 - k_block_indices.float().sum() / (K * Q * B * H)
+        else:
+            qk_sparsity = 1 - k_block_indices.float().sum() / ((K + 2) // 2) * Q * B * H
+        return o, qk_sparsity.item()
+    else:
+        return o
 
 
 
