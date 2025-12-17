@@ -2,8 +2,12 @@
 
 import torch
 import torch.nn.functional as F
-from spas_sage_attn import spas_sage2_attn_meansim_cuda
 from torch.nn.attention import SDPBackend, sdpa_kernel
+
+try:
+    from spas_sage_attn import spas_sage_attn_meansim
+except ImportError:
+    from spas_sage_attn import spas_sage2_attn_meansim_cuda as spas_sage_attn_meansim
 
 
 def get_rtol_atol(actual, expect):
@@ -39,7 +43,7 @@ def main():
     with sdpa_kernel(SDPBackend.MATH):
         out_math = F.scaled_dot_product_attention(q, k, v)
 
-    out_sparge = spas_sage2_attn_meansim_cuda(q, k, v)
+    out_sparge = spas_sage_attn_meansim(q, k, v)
     print("sparge vs math:", get_rtol_atol(out_sparge, out_math))
     print("The above (except max_rtol) should be < 0.05 (on RTX 20xx/30xx) or < 0.1 (on RTX 40xx/50xx)")
 
