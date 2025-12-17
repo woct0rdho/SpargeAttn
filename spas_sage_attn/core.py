@@ -19,6 +19,7 @@ import functools
 import torch
 from .utils import hyperparameter_check, get_block_map_meansim, get_block_map_meansim_fuse_quant, get_vanilla_qk_quant, block_map_lut_triton
 from .quant_per_block import per_block_int8, per_warp_int8
+from .triton_kernel_example import spas_sage_attn_meansim as spas_sage_attn_meansim_triton
 from einops import rearrange
 
 try:
@@ -56,6 +57,15 @@ def get_cuda_arch_versions():
         major, minor = torch.cuda.get_device_capability(i)
         cuda_archs.append(f"sm{major}{minor}")
     return cuda_archs
+
+
+@torch.compiler.disable
+def spas_sage_attn_meansim(q, k, v, *args, **kwargs):
+    arch = get_cuda_arch_versions()[q.device.index]
+    if arch in {"sm70", "sm75"}:
+        return spas_sage_attn_meansim_triton(q, k, v, *args, **kwargs)
+    else:
+        return spas_sage2_attn_meansim_cuda(q, k, v, *args, **kwargs)
 
 
 @torch.compiler.disable

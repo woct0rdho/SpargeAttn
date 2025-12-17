@@ -23,7 +23,7 @@ from .quant_per_block import per_block_int8
 
 
 @torch.compiler.disable
-def spas_sage_attn_meansim(q, k, v, attn_mask=None, dropout_p=0.0, is_causal=False, scale=None, smooth_k=True, simthreshd1=0.3, cdfthreshd=0.96, pvthreshd=20, attention_sink=False, tensor_layout="HND", output_dtype=torch.float16, return_sparsity=False):
+def spas_sage_attn_meansim(q, k, v, attn_mask=None, dropout_p=0.0, is_causal=False, scale=None, smooth_k=True, simthreshd1=0.6, cdfthreshd=0.98, pvthreshd=50, attention_sink=False, tensor_layout="HND", output_dtype=torch.float16, return_sparsity=False):
     assert q.size(-2)>=128, "seq_len should be not less than 128."
 
     torch.cuda.set_device(v.device)
