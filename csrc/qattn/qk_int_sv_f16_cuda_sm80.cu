@@ -302,7 +302,7 @@ torch::Tensor qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_thresh
     throw std::invalid_argument(err_msg.str());  
   }
   
-  torch::Tensor pv_count = torch::empty({0});
+  torch::Tensor pv_count = torch::empty({0}, query.options().dtype(at::ScalarType::Int));
 
   auto output_dtype = output.scalar_type();
 

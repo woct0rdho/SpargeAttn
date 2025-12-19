@@ -23,22 +23,19 @@ from .triton_kernel_example import spas_sage_attn_meansim as spas_sage_attn_mean
 from einops import rearrange
 
 try:
-    from . import _qattn_sm80
-    _qattn_sm80 = torch.ops.spas_sage_attn_qattn_sm80
+    from .sm80_compile import _qattn_sm80
     SM80_ENABLED = True
 except:
     SM80_ENABLED = False
 
 try:
-    from . import _qattn_sm89
-    _qattn_sm89 = torch.ops.spas_sage_attn_qattn_sm89
+    from .sm89_compile import _qattn_sm89
     SM89_ENABLED = True
 except:
     SM89_ENABLED = False
 
 try:
-    from . import _qattn_sm90
-    _qattn_sm90 = torch.ops.spas_sage_attn_qattn_sm90
+    from .sm90_compile import _qattn_sm90
     SM90_ENABLED = True
 except:
     SM90_ENABLED = False
@@ -47,14 +44,12 @@ from . import _fused
 _fused = torch.ops.spas_sage_attn_fused
 
 
-@functools.cache
 def get_cuda_version():
     version = torch.version.cuda
     major, minor = version.split('.')
     return int(major), int(minor)
 
 
-@functools.cache
 def get_cuda_arch_versions():
     cuda_archs = []
     for i in range(torch.cuda.device_count()):
@@ -63,22 +58,23 @@ def get_cuda_arch_versions():
     return cuda_archs
 
 
-@torch.compiler.disable
+# Currently get_cuda_arch_versions cannot be traced by torch.compile
+_cuda_archs = get_cuda_arch_versions()
+
+
 def spas_sage_attn_meansim(q, k, v, *args, **kwargs):
-    arch = get_cuda_arch_versions()[q.device.index]
+    arch = _cuda_archs[q.device.index]
     if arch in {"sm70", "sm75"}:
         return spas_sage_attn_meansim_triton(q, k, v, *args, **kwargs)
     else:
         return spas_sage2_attn_meansim_cuda(q, k, v, *args, **kwargs)
 
 
-@torch.compiler.disable
 def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_causal=False, scale=None, smooth_k=True, simthreshd1=0.6, cdfthreshd=0.98, pvthreshd=50, attention_sink=False, tensor_layout="HND", output_dtype=torch.float16, return_sparsity=False):
     assert tensor_layout in ['HND', 'NHD']
     if tensor_layout == 'NHD':
         q, k, v = map(lambda t: rearrange(t, '... L H D -> ... H L D'), (q, k, v))
     assert q.size(-2)>=128, "seq_len should be not less than 128."
-    torch.cuda.set_device(v.device)
 
     dtype = q.dtype
     if dtype == torch.float32 or dtype == torch.float16:
@@ -91,7 +87,7 @@ def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_caus
         # k = k - km
     headdim = q.size(-1)
 
-    arch = get_cuda_arch_versions()[q.device.index]
+    arch = _cuda_archs[q.device.index]
     if arch == "sm90":
         lut, valid_block_num, q_int8, q_scale, k_int8, k_scale = get_block_map_meansim_fuse_quant(q, k, km, is_causal=is_causal, simthreshd1=simthreshd1, cdfthreshd=cdfthreshd, return_lut=True, attention_sink=attention_sink, BLKQ=64, BLKK=128)
     else:
@@ -151,13 +147,11 @@ def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_caus
         return o
 
 
-@torch.compiler.disable
 def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_causal=False, scale=None, smooth_k=True, simthreshd1=-0.1, cdfthreshd=None, topk=0.5, pvthreshd=50, attention_sink=False, tensor_layout="HND", output_dtype=torch.float16, return_sparsity=False):
     assert tensor_layout in ['HND', 'NHD']
     if tensor_layout == 'NHD':
         q, k, v = map(lambda t: rearrange(t, '... L H D -> ... H L D'), (q, k, v))
     assert q.size(-2)>=128, "seq_len should be not less than 128."
-    torch.cuda.set_device(v.device)
 
     dtype = q.dtype
     if dtype == torch.float32 or dtype == torch.float16:
@@ -170,7 +164,7 @@ def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is
         # k = k - km
     headdim = q.size(-1)
 
-    arch = get_cuda_arch_versions()[q.device.index]
+    arch = _cuda_archs[q.device.index]
     if arch == "sm90":
         lut, valid_block_num, q_int8, q_scale, k_int8, k_scale = get_block_map_meansim_fuse_quant(q, k, km, is_causal=is_causal, simthreshd1=simthreshd1, cdfthreshd=cdfthreshd, topk=topk, return_lut=True, attention_sink=attention_sink, BLKQ=64, BLKK=128)
     else:
@@ -230,13 +224,11 @@ def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is
         return o
 
 
-@torch.compiler.disable
 def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=None, smooth_k=True, pvthreshd=50, attention_sink=False, tensor_layout="HND", output_dtype=torch.float16, return_sparsity=False):
     assert tensor_layout in ['HND', 'NHD']
     if tensor_layout == 'NHD':
         q, k, v = map(lambda t: rearrange(t, '... L H D -> ... H L D'), (q, k, v))
     assert q.size(-2)>=128, "seq_len should be not less than 128."
-    torch.cuda.set_device(v.device)
 
     dtype = q.dtype
     if dtype == torch.float32 or dtype == torch.float16:
@@ -249,8 +241,7 @@ def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=Non
         # k = k - km
     headdim = q.size(-1)
     
-    arch = get_cuda_arch_versions()[q.device.index]
-    
+    arch = _cuda_archs[q.device.index]
     if arch == "sm90":
         q_int8, q_scale, k_int8, k_scale = get_vanilla_qk_quant(q, k, km, 64, 128)
     else:
