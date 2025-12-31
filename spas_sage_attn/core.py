@@ -100,7 +100,7 @@ def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_caus
 
     pvthreshd = hyperparameter_check(pvthreshd, q.size(-3), q.device)
 
-    if arch in {"sm89", "sm90", "sm120"}:
+    if arch in {"sm89", "sm90", "sm100", "sm120", "sm121"}:
         ## quant v
         b, h_kv, kv_len, head_dim = v.shape
         padded_len = (kv_len + 127) // 128 * 128
@@ -108,7 +108,7 @@ def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_caus
         _fused.transpose_pad_permute_cuda(v, v_transposed_permutted, 1)
         v_fp8 = torch.empty(v_transposed_permutted.shape, dtype=torch.float8_e4m3fn, device=v.device)
         v_scale = torch.empty((b, h_kv, head_dim), dtype=torch.float32, device=v.device)
-        if arch in {"sm89", "sm120"}:
+        if arch in {"sm89", "sm100", "sm120", "sm121"}:
             # accum_f16
             _fused.scale_fuse_quant_cuda(v_transposed_permutted, v_fp8, v_scale, kv_len, 2.25, 1)
         else:
@@ -121,7 +121,7 @@ def spas_sage2_attn_meansim_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is_caus
     if arch in {"sm80", "sm86", "sm87"}:
         assert SM80_ENABLED
         _qattn_sm80.qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_threshold(q_int8, k_int8, v, o, lut, valid_block_num, pvthreshd, q_scale, k_scale, 1, _is_causal, 1, scale, 0)
-    elif arch in {"sm89", "sm120"}:
+    elif arch in {"sm89", "sm100", "sm120", "sm121"}:
         assert SM89_ENABLED
         if get_cuda_version() < (12, 8):
             f = _qattn_sm89.qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold
@@ -179,7 +179,7 @@ def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is
 
     pvthreshd = hyperparameter_check(pvthreshd, q.size(-3), q.device)
 
-    if arch in {"sm89", "sm90", "sm120"}:
+    if arch in {"sm89", "sm90", "sm100", "sm120", "sm121"}:
         ## quant v
         b, h_kv, kv_len, head_dim = v.shape
         padded_len = (kv_len + 127) // 128 * 128
@@ -187,7 +187,7 @@ def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is
         _fused.transpose_pad_permute_cuda(v, v_transposed_permutted, 1)
         v_fp8 = torch.empty(v_transposed_permutted.shape, dtype=torch.float8_e4m3fn, device=v.device)
         v_scale = torch.empty((b, h_kv, head_dim), dtype=torch.float32, device=v.device)
-        if arch in {"sm89", "sm120"}:
+        if arch in {"sm89", "sm100", "sm120", "sm121"}:
             # accum_f16
             _fused.scale_fuse_quant_cuda(v_transposed_permutted, v_fp8, v_scale, kv_len, 2.25, 1)
         else:
@@ -200,7 +200,7 @@ def spas_sage2_attn_meansim_topk_cuda(q, k, v, attn_mask=None, dropout_p=0.0, is
     if arch in {"sm80", "sm86", "sm87"}:
         assert SM80_ENABLED
         _qattn_sm80.qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_threshold(q_int8, k_int8, v, o, lut, valid_block_num, pvthreshd, q_scale, k_scale, 1, _is_causal, 1, scale, 0)
-    elif arch in {"sm89", "sm120"}:
+    elif arch in {"sm89", "sm100", "sm120", "sm121"}:
         assert SM89_ENABLED
         if get_cuda_version() < (12, 8):
             f = _qattn_sm89.qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold
@@ -259,7 +259,7 @@ def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=Non
 
     pvthreshd = hyperparameter_check(pvthreshd, q.size(-3), q.device)
 
-    if arch in {"sm89", "sm90", "sm120"}:
+    if arch in {"sm89", "sm90", "sm100", "sm120", "sm121"}:
         ## quant v
         b, h_kv, kv_len, head_dim = v.shape
         padded_len = (kv_len + 127) // 128 * 128
@@ -267,7 +267,7 @@ def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=Non
         _fused.transpose_pad_permute_cuda(v, v_transposed_permutted, 1)
         v_fp8 = torch.empty(v_transposed_permutted.shape, dtype=torch.float8_e4m3fn, device=v.device)
         v_scale = torch.empty((b, h_kv, head_dim), dtype=torch.float32, device=v.device)
-        if arch in {"sm89", "sm120"}:
+        if arch in {"sm89", "sm100", "sm120", "sm121"}:
             # accum_f16
             _fused.scale_fuse_quant_cuda(v_transposed_permutted, v_fp8, v_scale, kv_len, 2.25, 1)
         else:
@@ -279,7 +279,7 @@ def block_sparse_sage2_attn_cuda(q, k, v, mask_id=None, dropout_p=0.0, scale=Non
     if arch in {"sm80", "sm86", "sm87"}:
         assert SM80_ENABLED
         _qattn_sm80.qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_threshold(q_int8, k_int8, v, o, lut, valid_block_num, pvthreshd, q_scale, k_scale, 1, False, 1, scale, 0)
-    elif arch in {"sm89", "sm120"}:
+    elif arch in {"sm89", "sm100", "sm120", "sm121"}:
         assert SM89_ENABLED
         if get_cuda_version() < (12, 8):
             f = _qattn_sm89.qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold

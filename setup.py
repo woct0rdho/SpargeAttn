@@ -152,7 +152,7 @@ def get_nvcc_flags(allowed_capabilities):
 
 ext_modules = []
 
-if has_capability(("8.0", "8.6")):
+if has_capability(("8.0", "8.6", "8.7")):
     sources = [
         "csrc/qattn/pybind_sm80.cpp",
         "csrc/qattn/qk_int_sv_f16_cuda_sm80.cu",
@@ -164,13 +164,13 @@ if has_capability(("8.0", "8.6")):
         sources=sources,
         extra_compile_args={
             "cxx": CXX_FLAGS,
-            # Build binary for sm80 if sm86 is detected. No need to build binary for sm86
+            # Build binary for sm80 if sm86/87 is detected. No need to build binary for sm86/87
             "nvcc": get_nvcc_flags(["8.0"]),
         },
     )
     ext_modules.append(qattn_extension)
 
-if has_capability(("8.9", "12.0")):
+if has_capability(("8.9", "10.0", "12.0", "12.1")):
     sources = [
         "csrc/qattn/pybind_sm89.cpp",
         "csrc/qattn/qk_int_sv_f8_cuda_sm89.cu",
@@ -187,7 +187,7 @@ if has_capability(("8.9", "12.0")):
     )
     ext_modules.append(qattn_extension)
 
-if has_capability(("9.0",)):
+if has_capability("9.0"):
     sources = [
         "csrc/qattn/pybind_sm90.cpp",
         "csrc/qattn/qk_int_sv_f8_cuda_sm90.cu",
