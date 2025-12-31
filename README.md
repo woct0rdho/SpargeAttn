@@ -2,7 +2,7 @@
 
 This repo makes it easy to build SpargeAttention (also known as SparseSageAttention, and the package name is `spas_sage_attn`) for multiple Python, PyTorch, and CUDA versions, then distribute the wheels to other people.
 
-The latest wheels support GTX 16xx, RTX 20xx/30xx/40xx/50xx, A100, H100 (sm75/80/86/89/90/120).
+The latest wheels support GTX 16xx, RTX 20xx/30xx/40xx/50xx, V100, A100, H100, AGX Orin (sm70/75/80/86/87/89/90/120). There are also reports that it works with B200 (sm100) and DGX Spark (sm121), but I did not bundle these kernels in the wheels, and you need to build from source.
 
 ## Installation
 
@@ -22,13 +22,16 @@ SpargeAttention is usually not used directly, and [RadialAttention](https://gith
 
 If you need to build and run SpargeAttention on your own machine:
 1. Install Visual Studio (MSVC and Windows SDK), and CUDA toolkit
-2. Clone this repo. Checkout `abi3` branch if you want ABI3
-3. Install the dependencies in [`pyproject.toml`](https://github.com/woct0rdho/SpargeAttn/blob/main/pyproject.toml), include the correct torch version such as `torch 2.7.1+cu128`
+2. Clone this repo
+   * Checkout `abi3_stable` branch if you want ABI3 and libtorch stable ABI, which supports PyTorch >= 2.9
+   * Checkout `abi3` branch if you want ABI3, which supports PyTorch >= 2.4
+   * The purpose of ABI3 and libtorch stable ABI is to avoid building many wheels. I've also added `torch.compile` support in these branches. There is no other functional difference from the main branch
+3. Install the dependencies in [`pyproject.toml`](https://github.com/woct0rdho/SpargeAttn/blob/main/pyproject.toml), including the desired torch version such as `torch 2.7.1+cu128`
 4. Run `python setup.py install --verbose` to install directly, or `python setup.py bdist_wheel --verbose` to build a wheel. This avoids the environment checks of pip
 
 ## Dev notes
 
 * The wheels are built using the [workflow](https://github.com/woct0rdho/SpargeAttn/blob/main/.github/workflows/build-spargeattn.yml)
 * [Block-Sparse-SageAttention-2.0](https://github.com/Radioheading/Block-Sparse-SageAttention-2.0) is included, which is used in RadialAttention
-* Compared to the official repo, I've modified the API so we can use the same functions `spas_sage2_attn_meansim_cuda, spas_sage2_attn_meansim_topk_cuda, block_sparse_sage2_attn_cuda` for sm80/86/89/90/120
+* Compared to the official repo, I've modified the API so we can use the same functions `spas_sage2_attn_meansim_cuda, spas_sage2_attn_meansim_topk_cuda, block_sparse_sage2_attn_cuda` for sm >= 80
 * For RTX 20xx, you need to use the Triton kernel `spas_sage_attn_meansim` in `spas_sage_attn/triton_kernel_example.py`
