@@ -14,51 +14,53 @@
  * limitations under the License.
  */
 
-#include <torch/all.h>
+#include <torch/csrc/stable/tensor.h>
+
+using torch::stable::Tensor;
 
 void qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale(
-    torch::Tensor query,
-    torch::Tensor key,
-    torch::Tensor value,
-    torch::Tensor output,
-    torch::Tensor lut,
-    torch::Tensor valid_block_num,
-    torch::Tensor query_scale,
-    torch::Tensor key_scale,
-    torch::Tensor value_scale,
+    Tensor query,
+    Tensor key,
+    Tensor value,
+    Tensor output,
+    Tensor lut,
+    Tensor valid_block_num,
+    Tensor query_scale,
+    Tensor key_scale,
+    Tensor value_scale,
     int64_t tensor_layout,
     int64_t is_causal,
     int64_t qk_quant_gran,
     double sm_scale);
 
-torch::Tensor qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold(
-    torch::Tensor query,
-    torch::Tensor key,
-    torch::Tensor value,
-    torch::Tensor output,
-    torch::Tensor lut,
-    torch::Tensor valid_block_num,
-    torch::Tensor pv_threshold,
-    torch::Tensor query_scale,
-    torch::Tensor key_scale,
-    torch::Tensor value_scale,
+Tensor qk_int8_sv_f8_accum_f32_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold(
+    Tensor query,
+    Tensor key,
+    Tensor value,
+    Tensor output,
+    Tensor lut,
+    Tensor valid_block_num,
+    Tensor pv_threshold,
+    Tensor query_scale,
+    Tensor key_scale,
+    Tensor value_scale,
     int64_t tensor_layout,
     int64_t is_causal,
     int64_t qk_quant_gran,
     double sm_scale,
     int64_t return_pv_count);
 
-torch::Tensor qk_int8_sv_f8_accum_f16_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold(
-    torch::Tensor query,
-    torch::Tensor key,
-    torch::Tensor value,
-    torch::Tensor output,
-    torch::Tensor lut,
-    torch::Tensor valid_block_num,
-    torch::Tensor pv_threshold,
-    torch::Tensor query_scale,
-    torch::Tensor key_scale,
-    torch::Tensor value_scale,
+Tensor qk_int8_sv_f8_accum_f16_block_sparse_attn_inst_buf_fuse_v_scale_with_pv_threshold(
+    Tensor query,
+    Tensor key,
+    Tensor value,
+    Tensor output,
+    Tensor lut,
+    Tensor valid_block_num,
+    Tensor pv_threshold,
+    Tensor query_scale,
+    Tensor key_scale,
+    Tensor value_scale,
     int64_t tensor_layout,
     int64_t is_causal,
     int64_t qk_quant_gran,

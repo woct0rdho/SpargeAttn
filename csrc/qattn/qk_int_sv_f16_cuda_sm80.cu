@@ -14,17 +14,27 @@
  * limitations under the License.
  */
 
+#include <torch/csrc/stable/ops.h>
+#include <torch/csrc/stable/tensor_struct.h>
+#if TORCH_FEATURE_VERSION >= TORCH_VERSION_2_10_0
+#include <torch/csrc/stable/tensor_inl.h>
+#endif
+
+#include <torch/headeronly/core/ScalarType.h>
+
 #include "../pytorch_extensions_utils.cuh"
 #include "decl.cuh"
 
-void qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf(torch::Tensor query,
-                    torch::Tensor key,
-                    torch::Tensor value,
-                    torch::Tensor output,
-                    torch::Tensor lut,
-                    torch::Tensor valid_block_num,
-                    torch::Tensor query_scale,
-                    torch::Tensor key_scale,
+using torch::stable::Tensor;
+
+void qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf(Tensor query,
+                    Tensor key,
+                    Tensor value,
+                    Tensor output,
+                    Tensor lut,
+                    Tensor valid_block_num,
+                    Tensor query_scale,
+                    Tensor key_scale,
                     int64_t tensor_layout,
                     int64_t is_causal,
                     int64_t qk_quant_gran,
@@ -48,13 +58,13 @@ void qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf(torch::Tensor query,
   CHECK_CONTIGUOUS(query_scale);
   CHECK_CONTIGUOUS(key_scale);
 
-  CHECK_DTYPE(query, at::ScalarType::Char);
-  CHECK_DTYPE(key, at::ScalarType::Char);
-  CHECK_DTYPE(value, torch::kHalf);
-  CHECK_DTYPE(lut, at::ScalarType::Int);
-  CHECK_DTYPE(valid_block_num, at::ScalarType::Int);
-  CHECK_DTYPE(query_scale, at::ScalarType::Float);
-  CHECK_DTYPE(key_scale, at::ScalarType::Float);
+  CHECK_DTYPE(query, torch::headeronly::ScalarType::Char);
+  CHECK_DTYPE(key, torch::headeronly::ScalarType::Char);
+  CHECK_DTYPE(value, torch::headeronly::ScalarType::Half);
+  CHECK_DTYPE(lut, torch::headeronly::ScalarType::Int);
+  CHECK_DTYPE(valid_block_num, torch::headeronly::ScalarType::Int);
+  CHECK_DTYPE(query_scale, torch::headeronly::ScalarType::Float);
+  CHECK_DTYPE(key_scale, torch::headeronly::ScalarType::Float);
 
   CHECK_DIMS(query, 4);
   CHECK_DIMS(key, 4);
@@ -185,15 +195,15 @@ void qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf(torch::Tensor query,
   });
 }
 
-torch::Tensor qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_threshold(torch::Tensor query,
-                    torch::Tensor key,
-                    torch::Tensor value,
-                    torch::Tensor output,
-                    torch::Tensor lut,
-                    torch::Tensor valid_block_num,
-                    torch::Tensor pv_threshold,
-                    torch::Tensor query_scale,
-                    torch::Tensor key_scale,
+Tensor qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_threshold(Tensor query,
+                    Tensor key,
+                    Tensor value,
+                    Tensor output,
+                    Tensor lut,
+                    Tensor valid_block_num,
+                    Tensor pv_threshold,
+                    Tensor query_scale,
+                    Tensor key_scale,
                     int64_t tensor_layout,
                     int64_t is_causal,
                     int64_t qk_quant_gran,
@@ -220,14 +230,14 @@ torch::Tensor qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_thresh
   CHECK_CONTIGUOUS(query_scale);
   CHECK_CONTIGUOUS(key_scale);
 
-  CHECK_DTYPE(query, at::ScalarType::Char);
-  CHECK_DTYPE(key, at::ScalarType::Char);
-  CHECK_DTYPE(value, torch::kHalf);
-  CHECK_DTYPE(lut, at::ScalarType::Int);
-  CHECK_DTYPE(valid_block_num, at::ScalarType::Int);
-  CHECK_DTYPE(pv_threshold, at::ScalarType::Float);
-  CHECK_DTYPE(query_scale, at::ScalarType::Float);
-  CHECK_DTYPE(key_scale, at::ScalarType::Float);
+  CHECK_DTYPE(query, torch::headeronly::ScalarType::Char);
+  CHECK_DTYPE(key, torch::headeronly::ScalarType::Char);
+  CHECK_DTYPE(value, torch::headeronly::ScalarType::Half);
+  CHECK_DTYPE(lut, torch::headeronly::ScalarType::Int);
+  CHECK_DTYPE(valid_block_num, torch::headeronly::ScalarType::Int);
+  CHECK_DTYPE(pv_threshold, torch::headeronly::ScalarType::Float);
+  CHECK_DTYPE(query_scale, torch::headeronly::ScalarType::Float);
+  CHECK_DTYPE(key_scale, torch::headeronly::ScalarType::Float);
 
   CHECK_DIMS(query, 4);
   CHECK_DIMS(key, 4);
@@ -302,7 +312,7 @@ torch::Tensor qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_thresh
     throw std::invalid_argument(err_msg.str());  
   }
   
-  torch::Tensor pv_count = torch::empty({0}, query.options().dtype(at::ScalarType::Int));
+  Tensor pv_count = torch::stable::new_empty(query, {0}, std::make_optional(torch::headeronly::ScalarType::Int));
 
   auto output_dtype = output.scalar_type();
 
@@ -318,7 +328,7 @@ torch::Tensor qk_int8_sv_f16_accum_f16_block_sparse_attn_inst_buf_with_pv_thresh
             
             if constexpr (RETURN_PV_COUNT)
             {
-              pv_count = torch::empty({batch_size, num_qo_heads, div_ceil(qo_len, CTA_Q) * (CTA_Q / WARP_Q)}, query.options().dtype(at::ScalarType::Int));
+              pv_count = torch::stable::new_empty(query, {batch_size, num_qo_heads, div_ceil(qo_len, CTA_Q) * (CTA_Q / WARP_Q)}, std::make_optional(torch::headeronly::ScalarType::Int));
             }
 
             if constexpr (QK_QUANT_GRAN == 1)
