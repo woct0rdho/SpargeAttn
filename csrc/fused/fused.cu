@@ -1,5 +1,10 @@
-#include <ATen/cuda/CUDAContext.h>
-#include <torch/all.h>
+#include <torch/csrc/stable/tensor_struct.h>
+#if TORCH_FEATURE_VERSION >= TORCH_VERSION_2_10_0
+#include <torch/csrc/stable/tensor_inl.h>
+#endif
+
+#include <torch/headeronly/core/ScalarType.h>
+#include <torch/headeronly/util/Exception.h>
 
 #include "../pytorch_extensions_utils.cuh"
 #include "../reduction_utils.cuh"
@@ -7,6 +12,8 @@
 #include "../cp_async.cuh"
 #include <cuda_fp16.h>
 #include <cuda_bf16.h>
+
+using torch::stable::Tensor;
 
 template <typename T>
 __device__ __forceinline__ float convert_to_float(T val)
@@ -191,8 +198,8 @@ __global__ void MeanScaleKernel(T *__restrict__ input, int8_t *__restrict__ outp
 }
 
 void transpose_pad_permute_cuda(
-                torch::Tensor input,
-                torch::Tensor output,
+                Tensor input,
+                Tensor output,
                 int64_t tensor_layout)
 {
   CHECK_CUDA(input);
@@ -245,7 +252,7 @@ void transpose_pad_permute_cuda(
   auto input_dtype = input.scalar_type();
   auto output_dtype = output.scalar_type();
 
-  TORCH_CHECK(input_dtype == output_dtype, "Input and output must have the same data type");
+  STD_TORCH_CHECK(input_dtype == output_dtype, "Input and output must have the same data type");
 
   DISPATCH_PYTORCH_DTYPE_TO_CTYPE_FP16(input_dtype, c_type, {
     DISPATCH_HEAD_DIM(head_dim, HEAD_DIM, {
@@ -267,9 +274,9 @@ void transpose_pad_permute_cuda(
 }
 
 void scale_fuse_quant_cuda(
-                torch::Tensor input,
-                torch::Tensor output,
-                torch::Tensor scale,
+                Tensor input,
+                Tensor output,
+                Tensor scale,
                 int64_t num_tokens,
                 double scale_max,
                 int64_t tensor_layout)
@@ -278,8 +285,8 @@ void scale_fuse_quant_cuda(
   CHECK_CUDA(output);
   CHECK_CUDA(scale);
 
-  // CHECK_DTYPE(output, torch::kInt8);
-  CHECK_DTYPE(scale, torch::kFloat);
+  // CHECK_DTYPE(output, torch::headeronly::ScalarType::Char);
+  CHECK_DTYPE(scale, torch::headeronly::ScalarType::Float);
 
   CHECK_CONTIGUOUS(input);
   CHECK_CONTIGUOUS(output);
