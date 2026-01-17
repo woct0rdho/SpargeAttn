@@ -16,7 +16,6 @@
 
 #pragma once
 #include <cuda.h>
-#include <assert.h>
 
 namespace wgmma{
 #if (!defined(__CUDA_ARCH__) || (__CUDA_ARCH__ >= 900))
@@ -26,9 +25,8 @@ namespace wgmma{
 #if defined(__CUDA_ARCH__)
 #define RUNTIME_ASSERT(x) __brkpt()
 #else
-// #include <assert.h>
+#include <assert.h>
 #define RUNTIME_ASSERT(x) assert(0 && x)
-//#define RUNTIME_ASSERT(x) ((void)0)
 #endif
 
 __device__ __forceinline__ uint64_t matrix_descriptor_encode(uint64_t x) { return (((x) & 0x3FFFF) >> 0x4); }

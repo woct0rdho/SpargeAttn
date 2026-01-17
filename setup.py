@@ -61,7 +61,6 @@ NVCC_FLAGS_COMMON = [
     f"--threads={os.cpu_count()}",
     # "-Xptxas=-v",
     "-diag-suppress=174", # suppress the specific warning
-    "-Xcompiler", "-include,cassert", # fix error occurs when compiling for SM90+ with newer CUDA toolkits
     "-diag-suppress=177",
     "-diag-suppress=221",
 ]

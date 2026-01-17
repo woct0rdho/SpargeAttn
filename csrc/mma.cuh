@@ -22,7 +22,6 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <type_traits>
-#include <assert.h>
 
 namespace mma{
 
@@ -56,9 +55,8 @@ namespace mma{
 #if defined(__CUDA_ARCH__)
 #define RUNTIME_ASSERT(x) __brkpt()
 #else
-//#include <assert.h>
+#include <assert.h>
 #define RUNTIME_ASSERT(x) assert(0 && x)
-//#define RUNTIME_ASSERT(x) ((void)0)
 #endif
 
 enum class MMAMode {
