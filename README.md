@@ -191,6 +191,13 @@ Our approach is universal, and we warmly welcome contributions! Feel free to sub
   year={2025}
 }
 
+@article{zhang2026spargeattention2,
+  title={SpargeAttention2: Trainable Sparse Attention via Hybrid Top-k+ Top-p Masking and Distillation Fine-Tuning},
+  author={Zhang, Jintao and Jiang, Kai and Xiang, Chendong and Feng, Weiqi and Hu, Yuezhou and Xi, Haocheng and Chen, Jianfei and Zhu, Jun},
+  journal={arXiv preprint arXiv:2602.13515},
+  year={2026}
+}
+
 @inproceedings{zhang2025sageattention,
   title={SageAttention: Accurate 8-Bit Attention for Plug-and-play Inference Acceleration}, 
   author={Zhang, Jintao and Wei, Jia and Zhang, Pengle and Zhu, Jun and Chen, Jianfei},
