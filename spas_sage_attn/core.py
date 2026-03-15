@@ -62,7 +62,7 @@ def get_cuda_arch_versions():
 @torch.compiler.disable
 def spas_sage_attn_meansim(q, k, v, *args, **kwargs):
     arch = get_cuda_arch_versions()[q.device.index]
-    if arch in {"sm70", "sm75"}:
+    if arch == "sm75":
         return spas_sage_attn_meansim_triton(q, k, v, *args, **kwargs)
     else:
         return spas_sage2_attn_meansim_cuda(q, k, v, *args, **kwargs)
