@@ -36,33 +36,6 @@ PyMODINIT_FUNC PyInit__fused(void)
     return PyModule_Create(&module_def);
 }
 
-void boxed_transpose_pad_permute_cuda(
-    StableIValue* stack,
-    uint64_t num_args,
-    uint64_t num_outputs
-) {
-    auto input = to<Tensor>(stack[0]);
-    auto output = to<Tensor>(stack[1]);
-    auto tensor_layout = to<int64_t>(stack[2]);
-
-    transpose_pad_permute_cuda(input, output, tensor_layout);
-}
-
-void boxed_scale_fuse_quant_cuda(
-    StableIValue* stack,
-    uint64_t num_args,
-    uint64_t num_outputs
-) {
-    auto input = to<Tensor>(stack[0]);
-    auto output = to<Tensor>(stack[1]);
-    auto scale = to<Tensor>(stack[2]);
-    auto num_tokens = to<int64_t>(stack[3]);
-    auto scale_max = to<double>(stack[4]);
-    auto tensor_layout = to<int64_t>(stack[5]);
-
-    scale_fuse_quant_cuda(input, output, scale, num_tokens, scale_max, tensor_layout);
-}
-
 // Defines the operators
 STABLE_TORCH_LIBRARY(spas_sage_attn_fused, m) {
     m.def("transpose_pad_permute_cuda("
@@ -82,6 +55,6 @@ STABLE_TORCH_LIBRARY(spas_sage_attn_fused, m) {
 
 // Registers CUDA implementations
 STABLE_TORCH_LIBRARY_IMPL(spas_sage_attn_fused, CUDA, m) {
-    m.impl("transpose_pad_permute_cuda", &boxed_transpose_pad_permute_cuda);
-    m.impl("scale_fuse_quant_cuda", &boxed_scale_fuse_quant_cuda);
+    m.impl("transpose_pad_permute_cuda", TORCH_BOX(transpose_pad_permute_cuda));
+    m.impl("scale_fuse_quant_cuda", TORCH_BOX(scale_fuse_quant_cuda));
 }
